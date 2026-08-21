@@ -17,6 +17,7 @@ import Villes from "./pages/Villes";
 import WorkTimes from "./pages/WorkTimes";
 import ChatWidget from "./components/ChatWidget";
 import CrmAds from "./pages/CrmAds";
+import Salaire from "./pages/Salaire";
 import PerfSources from "./pages/PerfSources";
 import WelcomeOverlay from "./components/WelcomeOverlay";
 import { PeriodProvider, PeriodBar } from "./period";
@@ -343,6 +344,7 @@ function Workspace() {
           {tab === "Dashboard performance" && <PerfSources />}
           {tab === "إدارة المستخدمين" && <UsersAdmin />}
           {tab === "CRM Ads" && <div className="h-full overflow-auto"><CrmAds /></div>}
+          {tab === "Salaire" && <div className="h-full overflow-auto"><Salaire /></div>}
           {tab === "Historique" && <Historique />}
           {tab === "Work Team" && <WorkTeam onOpen={(name) => setTab(name)} onRanking={() => setTab("Ranking")} onLive={() => setTab("Live Activity")} />}
           {tab === "Ranking" && <Ranking />}
@@ -385,6 +387,7 @@ function Workspace() {
           {/* ── Gestion ── */}
           <span className="mr-1 hidden shrink-0 text-[9px] font-bold uppercase tracking-[0.12em] text-slate-400 lg:block">Gestion</span>
           <ToolBtn color="violet" on={tab === "CRM Ads"} onClick={() => setTab("CRM Ads")} title="تكاليف الإعلانات والكوست لكل طلبية">💸 CRM</ToolBtn>
+          <ToolBtn color="emerald" on={tab === "Salaire"} onClick={() => setTab("Salaire")} title="سالير البنات — محسوب أوتوماتيك">💵 Salaire</ToolBtn>
           <ToolBtn color="violet" on={tab === "إدارة المستخدمين"} onClick={() => setTab("إدارة المستخدمين")} title="إدارة المستخدمين">🔐 Users</ToolBtn>
           <ToolBtn color="slate" on={tab === "Historique"} onClick={() => setTab("Historique")} title="سجل التعديلات">🕘 Historique</ToolBtn>
 
