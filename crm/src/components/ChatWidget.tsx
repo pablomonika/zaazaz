@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useAuth } from "../auth";
+import { useStore } from "../store";
 import { useChat, sendChatMessage, markChatRead, chatTime, type ChatMsg } from "../data/chat";
 import { playIncoming, playOutgoing, isMuted, toggleMute } from "../data/sounds";
 
@@ -16,7 +17,9 @@ const avColor = (n: string) => AV[[...(n || "?")].reduce((a, c) => a + c.charCod
 type Thread = { girl: string; girlName: string; msgs: ChatMsg[]; unread: number; last: ChatMsg };
 
 export default function ChatWidget() {
-  const { currentUser } = useAuth();
+  const { currentUser, users } = useAuth();
+  const { agentNames } = useStore();
+  const [q, setQ] = useState("");
   const msgs = useChat();
   const isAdmin = currentUser?.role === "admin";
   const me = currentUser?.username || "";
@@ -39,32 +42,44 @@ export default function ChatWidget() {
   const listRef = useRef<HTMLDivElement>(null);
 
   /* ── Messages de MA conversation (fille) ── */
+  const myAgentName = currentUser?.agent || "";
   const myThread = useMemo(() =>
     msgs
-      .filter((m) => m.from === me || m.to === me)
+      .filter((m) => m.from === me || m.to === me || (m.fromRole === "admin" && !!myAgentName && m.to === myAgentName))
       .sort((a, b) => a.at.localeCompare(b.at)),
-    [msgs, me]);
+    [msgs, me, myAgentName]);
+
+  /* ── لائحة كل البنات (حتى لي ماعندهاش رسائل) ── */
+  const girlsList = useMemo(() => {
+    const list: { name: string; username: string }[] = [];
+    users.forEach((u) => { if (u.role === "user" && u.agent && !list.some((g) => g.name === u.agent)) list.push({ name: u.agent, username: u.username }); });
+    agentNames.forEach((a) => { if (!list.some((g) => g.name === a)) list.push({ name: a, username: a }); });
+    return list.sort((x, y) => x.name.localeCompare(y.name, "fr"));
+  }, [users, agentNames]);
 
   /* ── Toutes les conversations (admin) ── */
   const threads = useMemo<Thread[]>(() => {
-    const m = new Map<string, ChatMsg[]>();
-    msgs.forEach((msg) => {
-      const girl = msg.fromRole === "user" ? msg.from : (msg.to !== "admin" ? msg.to : null);
-      if (!girl) return;
-      if (!m.has(girl)) m.set(girl, []);
-      m.get(girl)!.push(msg);
-    });
-    return [...m.entries()].map(([girl, list]) => {
-      const sorted = [...list].sort((a, b) => a.at.localeCompare(b.at));
+    return girlsList.map((g) => {
+      const list = msgs
+        .filter((m) => {
+          if (m.fromRole === "user") return m.from === g.username || m.from === g.name;
+          return m.to === g.username || m.to === g.name;
+        })
+        .sort((a, b) => a.at.localeCompare(b.at));
       return {
-        girl,
-        girlName: sorted.find((x) => x.fromRole === "user")?.fromName || girl,
-        msgs: sorted,
-        unread: sorted.filter((x) => x.to === "admin" && !x.read).length,
-        last: sorted[sorted.length - 1],
+        girl: g.username,
+        girlName: g.name,
+        msgs: list,
+        unread: list.filter((x) => x.to === "admin" && !x.read).length,
+        last: list[list.length - 1],
       };
-    }).sort((a, b) => b.last.at.localeCompare(a.last.at));
-  }, [msgs]);
+    }).sort((a, b) => {
+      if (a.last && b.last) return b.last.at.localeCompare(a.last.at);
+      if (a.last) return -1;
+      if (b.last) return 1;
+      return a.girlName.localeCompare(b.girlName, "fr");
+    });
+  }, [msgs, girlsList]);
 
   const unread = useMemo(() =>
     isAdmin
@@ -134,7 +149,7 @@ export default function ChatWidget() {
                 {isAdmin ? (thread ? otherName : "محادثات الفريق") : "فريق الإدارة"}
               </div>
               <div className="flex items-center gap-1 text-[10px] text-indigo-100">
-                <i className="h-1.5 w-1.5 rounded-full bg-emerald-300" /> {isAdmin ? (thread ? "في المحادثة" : `${threads.length} محادثة`) : "موجود دابا"}
+                <i className="h-1.5 w-1.5 rounded-full bg-emerald-300" /> {isAdmin ? (thread ? "في المحادثة" : `${threads.filter((t) => t.msgs.length).length} محادثة`) : "موجود دابا"}
               </div>
             </div>
             <button onClick={() => { toggleMute(); setMuted(isMuted()); }} title={muted ? "الأصوات مكتومة — ضغط لتشغيلها" : "كتم الأصوات"}
@@ -146,9 +161,13 @@ export default function ChatWidget() {
           {isAdmin && !thread ? (
             /* liste des conversations (admin) */
             <div className="flex-1 overflow-auto">
-              {threads.map((t) => (
+              <div className="sticky top-0 z-10 border-b border-slate-100 bg-white/95 p-2 backdrop-blur">
+                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="🔎 بحث عن بنت..."
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[11px] outline-none transition focus:border-indigo-400 focus:bg-white" />
+              </div>
+              {threads.filter((t) => !q.trim() || t.girlName.toLowerCase().includes(q.trim().toLowerCase())).map((t) => (
                 <button key={t.girl} onClick={() => setThread(t.girl)}
-                  className={`flex w-full items-center gap-2.5 border-b border-slate-50 px-3 py-2.5 text-start transition hover:bg-indigo-50/60 ${t.unread ? "bg-indigo-50/40" : ""}`}>
+                  className={`flex w-full items-center gap-2.5 border-b border-slate-50 px-3 py-2.5 text-start transition hover:bg-indigo-50/60 ${t.unread ? "bg-indigo-50/40" : ""} ${!t.msgs.length ? "opacity-70" : ""}`}>
                   <span className={`relative grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-to-br text-xs font-extrabold text-white ${avColor(t.girl)}`}>
                     {t.girlName.charAt(0).toUpperCase()}
                     {t.unread > 0 && <i className="absolute -end-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-red-500 px-0.5 text-[8px] font-bold text-white">{t.unread}</i>}
@@ -156,20 +175,20 @@ export default function ChatWidget() {
                   <span className="min-w-0 flex-1">
                     <span className="flex items-baseline gap-1.5">
                       <b className="truncate text-xs font-extrabold text-slate-800">{t.girlName}</b>
-                      <span className="ms-auto shrink-0 text-[9px] font-medium text-slate-400">{chatTime(t.last.at)}</span>
+                      <span className="ms-auto shrink-0 text-[9px] font-medium text-slate-400">{t.last ? chatTime(t.last.at) : ""}</span>
                     </span>
                     <span className={`block truncate text-[11px] ${t.unread ? "font-bold text-slate-700" : "text-slate-500"}`}>
-                      {t.last.fromRole === "user" ? t.last.text : `أنت: ${t.last.text}`}
+                      {t.last ? (t.last.fromRole === "user" ? t.last.text : `أنت: ${t.last.text}`) : "👋 ابدا محادثة جديدة"}
                     </span>
                   </span>
                 </button>
               ))}
-              {!threads.length && (
+              {!girlsList.length && (
                 <div className="grid h-full place-items-center p-6 text-center">
                   <div>
                     <div className="mb-2 text-4xl">📭</div>
-                    <p className="text-xs font-bold text-slate-500">ما كاين حتى محادثة</p>
-                    <p className="mt-1 text-[10px] text-slate-400">ملي شي بنت ترسل ميساج، كايبان هنا</p>
+                    <p className="text-xs font-bold text-slate-500">ما كاين حتى بنت فـ الفريق</p>
+                    <p className="mt-1 text-[10px] text-slate-400">زيد البنات من صفحة Work Team</p>
                   </div>
                 </div>
               )}
