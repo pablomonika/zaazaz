@@ -37,6 +37,9 @@ const SRC_STYLES: Record<string, { base: string; on: string }> = {
   },
 };
 
+/** 💡 خصم تأكيد أوتوماتيكي: 10 DH على كل طلبية Livrée (Confirmation) */
+const CONFIRM_CHARGE = 10;
+
 const fmt = (n: number | null, d = 2) =>
   n === null || !isFinite(n) ? "—" : (Math.round(n * 100) / 100).toLocaleString("fr-FR", { maximumFractionDigits: d });
 const pct = (n: number | null) => (n === null ? "—" : `${Math.round(n)}%`);
@@ -127,13 +130,14 @@ export default function PerfSources() {
       cplc: conf ? spend / conf : null,
       cpll: liv ? spend / liv : null,
       // ═══ GAIN/PERTE بالطريقة الصحيحة ═══
-      // (Livré × PRIX DE VENTE) − (Livré × PRIX D'achat) − شحن Livré − شحن Retour − المصروف
-      bep: liv ? (spend + retShip) / liv + shipPerLiv + (achat ?? 0) : (shipPerLiv || null),
+      // (Livré × PRIX DE VENTE) − (Livré × PRIX D'achat) − شحن Livré − شحن Retour − المصروف − (Livré × 10 DH تأكيد)
+      bep: liv ? (spend + retShip) / liv + shipPerLiv + (achat ?? 0) + CONFIRM_CHARGE : (shipPerLiv || null),
       gain: liv * r.prix
         - (achat !== null ? liv * achat : 0)
         - ship
         - retShip
-        - spend,
+        - spend
+        - liv * CONFIRM_CHARGE,
     };
   };
 
@@ -227,7 +231,7 @@ export default function PerfSources() {
               </td>
               <td className="px-2 py-2 text-center">
                 <span
-                  title={`الحساب:\n(${c.liv} × ${c.row.prix} PRIX DE VENTE) = ${fmt(c.liv * c.row.prix)} DH\n− (${c.liv} × ${c.achat ?? 0} PRIX D'achat) = ${fmt(c.liv * (c.achat ?? 0))} DH\n− شحن Livré = ${fmt(shipOf(c))} DH\n− شحن Retour = ${fmt(retShipOf(c))} DH\n− المصروف = ${fmt(c.spend)} DH\n═══════\nGAIN/PERTE = ${fmt(c.gain)} DH`}
+                  title={`الحساب:\n(${c.liv} × ${c.row.prix} PRIX DE VENTE) = ${fmt(c.liv * c.row.prix)} DH\n− (${c.liv} × ${c.achat ?? 0} PRIX D'achat) = ${fmt(c.liv * (c.achat ?? 0))} DH\n− شحن Livré = ${fmt(shipOf(c))} DH\n− شحن Retour = ${fmt(retShipOf(c))} DH\n− المصروف = ${fmt(c.spend)} DH\n− التأكيدات (${c.liv} × ${CONFIRM_CHARGE} DH) = ${fmt(c.liv * CONFIRM_CHARGE)} DH\n═══════\nGAIN/PERTE = ${fmt(c.gain)} DH`}
                   className={`cursor-help rounded-lg px-2 py-1 text-xs font-extrabold ${c.gain >= 0 ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}>{fmt(c.gain)} DH</span>
               </td>
               <td className="px-2 py-2 text-center">
