@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useAuth } from "../auth";
 import { useChat, sendChatMessage, markChatRead, chatTime, type ChatMsg } from "../data/chat";
+import { playIncoming, playOutgoing, isMuted, toggleMute } from "../data/sounds";
 
 /* ═══════════════════════ ChatWidget ═══════════════════════
    💬 Bulle de chat flottante (bas-gauche) — comme les grands sites
@@ -24,6 +25,17 @@ export default function ChatWidget() {
   const [open, setOpen] = useState(false);
   const [thread, setThread] = useState<string | null>(null); // admin uniquement
   const [text, setText] = useState("");
+  const [muted, setMuted] = useState(() => isMuted());
+
+  /* 🔔 نغمة عند وصول رسالة جديدة (غير من عند راسي) */
+  const lastCountRef = useRef(-1);
+  useEffect(() => {
+    if (lastCountRef.current === -1) { lastCountRef.current = msgs.length; return; }
+    const grew = msgs.length > lastCountRef.current;
+    lastCountRef.current = msgs.length;
+    const last = msgs[msgs.length - 1];
+    if (grew && last && last.from !== me) playIncoming();
+  }, [msgs, me]);
   const listRef = useRef<HTMLDivElement>(null);
 
   /* ── Messages de MA conversation (fille) ── */
@@ -78,6 +90,7 @@ export default function ChatWidget() {
     if (!t) return;
     if (isAdmin && thread) sendChatMessage(me, "Admin", "admin", thread, t);
     else if (!isAdmin) sendChatMessage(me, myName, "user", "admin", t);
+    playOutgoing();
     setText("");
   };
 
@@ -124,6 +137,8 @@ export default function ChatWidget() {
                 <i className="h-1.5 w-1.5 rounded-full bg-emerald-300" /> {isAdmin ? (thread ? "في المحادثة" : `${threads.length} محادثة`) : "موجود دابا"}
               </div>
             </div>
+            <button onClick={() => { toggleMute(); setMuted(isMuted()); }} title={muted ? "الأصوات مكتومة — ضغط لتشغيلها" : "كتم الأصوات"}
+              className="grid h-7 w-7 place-items-center rounded-lg bg-white/10 text-[11px] transition hover:bg-white/25">{muted ? "🔕" : "🔔"}</button>
             <button onClick={() => setOpen(false)} className="grid h-7 w-7 place-items-center rounded-lg bg-white/10 transition hover:bg-white/25">✕</button>
           </div>
 

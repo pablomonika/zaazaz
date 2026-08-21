@@ -73,6 +73,18 @@ function subscribe(cb: () => void) {
   return () => { listeners.delete(cb); };
 }
 
+/* 🔁 مزامنة حية بين التابات (نفس المتصفح) — كاتشعل النغمة عند المستلم */
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (e) => {
+    if (e.key === KEY && e.newValue) {
+      try {
+        cache = JSON.parse(e.newValue) as ChatMsg[];
+        listeners.forEach((l) => l());
+      } catch { /* ignore */ }
+    }
+  });
+}
+
 export function useChat(): ChatMsg[] {
   return useSyncExternalStore(subscribe, () => (cache ??= load()), () => []);
 }
