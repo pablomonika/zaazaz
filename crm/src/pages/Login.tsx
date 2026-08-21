@@ -35,12 +35,48 @@ export default function Login() {
         <p className="mt-3 max-w-md text-center text-sm leading-7 text-slate-500">
           حل متكامل لمتابعة مبيعاتك، إدارة المخزون، وتحليل أداء أعمالك بسهولة واحترافية.
         </p>
-        <img
-          src="/images/devices-mockup.png"
-          alt="Paraveda dashboard"
-          className="mt-8 w-full max-w-xl select-none object-contain"
-          draggable={false}
-        />
+        {/* 🖥️ Mockup مدمج (SVG) — بلا ملفات خارجية */}
+        <svg viewBox="0 0 560 340" className="mt-8 w-full max-w-xl select-none" role="img" aria-label="Paraveda CRM">
+          <defs>
+            <linearGradient id="gBar" x1="0" y1="1" x2="0" y2="0">
+              <stop offset="0" stopColor="#818cf8" /><stop offset="1" stopColor="#c084fc" />
+            </linearGradient>
+            <linearGradient id="gLine" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stopColor="#6366f1" /><stop offset="1" stopColor="#a855f7" />
+            </linearGradient>
+          </defs>
+          {/* لابتوب */}
+          <rect x="70" y="30" width="330" height="220" rx="12" fill="#fff" stroke="#e2e8f0" strokeWidth="3" />
+          <rect x="70" y="30" width="330" height="34" rx="12" fill="#f1f5f9" />
+          <circle cx="90" cy="47" r="5" fill="#f87171" /><circle cx="108" cy="47" r="5" fill="#fbbf24" /><circle cx="126" cy="47" r="5" fill="#34d399" />
+          <rect x="55" y="248" width="360" height="12" rx="6" fill="#e2e8f0" />
+          {/* شارت الأعمدة */}
+          <rect x="100" y="150" width="26" height="70" rx="4" fill="url(#gBar)" />
+          <rect x="138" y="120" width="26" height="100" rx="4" fill="url(#gBar)" />
+          <rect x="176" y="165" width="26" height="55" rx="4" fill="url(#gBar)" />
+          <rect x="214" y="100" width="26" height="120" rx="4" fill="url(#gBar)" />
+          <rect x="252" y="135" width="26" height="85" rx="4" fill="url(#gBar)" />
+          {/* الخط */}
+          <polyline points="100,140 150,100 200,125 250,70 300,95 360,55" fill="none" stroke="url(#gLine)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="360" cy="55" r="5" fill="#a855f7" />
+          {/* بطاقات */}
+          <rect x="320" y="130" width="60" height="34" rx="6" fill="#ede9fe" />
+          <rect x="320" y="174" width="60" height="34" rx="6" fill="#d1fae5" />
+          {/* تيليفون */}
+          <rect x="420" y="80" width="110" height="190" rx="16" fill="#0f172a" />
+          <rect x="428" y="92" width="94" height="166" rx="10" fill="#fff" />
+          <rect x="428" y="92" width="94" height="24" rx="10" fill="#6366f1" />
+          <rect x="438" y="126" width="74" height="10" rx="5" fill="#e2e8f0" />
+          <rect x="438" y="144" width="56" height="10" rx="5" fill="#e2e8f0" />
+          <circle cx="455" cy="190" r="12" fill="#34d399" />
+          <rect x="474" y="182" width="40" height="8" rx="4" fill="#cbd5e1" />
+          <rect x="474" y="196" width="30" height="8" rx="4" fill="#e2e8f0" />
+          <circle cx="455" cy="228" r="12" fill="#f87171" />
+          <rect x="474" y="220" width="40" height="8" rx="4" fill="#cbd5e1" />
+          <rect x="474" y="234" width="30" height="8" rx="4" fill="#e2e8f0" />
+          {/* ظل */}
+          <ellipse cx="280" cy="322" rx="230" ry="12" fill="#0f172a" opacity="0.06" />
+        </svg>
       </div>
 
       {/* ── Curved navy background (right side) ── */}
