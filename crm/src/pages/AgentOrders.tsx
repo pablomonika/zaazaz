@@ -6,6 +6,7 @@ import Remarques from "./Remarques";
 import TotalLivraison from "./TotalLivraison";
 import Historique from "./Historique";
 import { useStore } from "../store";
+import { useAuth } from "../auth";
 import { usePeriod } from "../period";
 import { useVilles, priceForCity } from "../data/villes";
 import { buildDupIndex, dupInfoFor } from "../data/duplicates";
@@ -41,6 +42,10 @@ function rowAppearance(order: Order, index: number) {
 export default function AgentOrders({ agent: rawAgent }: { agent: string }) {
   const agent = String(rawAgent ?? "");
   const { orders, add, upd, del, saveCheckpoint, savedAt, savedCount } = useStore();
+  const { currentUser: viewer } = useAuth();
+  const isAdminViewer = viewer?.role === "admin";
+  /* 🔒 Verrouillage: Livrée = مقفولة على البنات */
+  const locked = (o: Order) => o.livraison === "Livrée" && !isAdminViewer;
   const { inRange } = usePeriod();
   const isMobile = useIsMobile();
 
@@ -165,7 +170,12 @@ export default function AgentOrders({ agent: rawAgent }: { agent: string }) {
           {shownRows.map((o, index) => {
             const { bg, strike } = rowAppearance(o, index);
             return (
-              <div key={o.id} className="overflow-hidden rounded-xl border border-slate-200 shadow-sm" style={{ textDecoration: strike ? "line-through" : "none" }}>
+              <div key={o.id} className={`overflow-hidden rounded-xl border shadow-sm ${locked(o) ? "border-amber-300" : "border-slate-200"}`} style={{ textDecoration: strike ? "line-through" : "none" }}>
+                {locked(o) && (
+                  <div className="flex items-center gap-2 bg-amber-50 px-2.5 py-1.5 text-[10px] font-bold text-amber-800">
+                    🔒 طلبية مسلّمة — مقفولة، الأدمين فقط يقدر يبدلها
+                  </div>
+                )}
                 {/* رأس الكارت: الحالة + السمية + مسح */}
                 <div className="flex items-center gap-1.5 px-2.5 py-1.5" style={{ background: bg }}>
                   <span className="rounded-md bg-white/70 px-1.5 py-0.5 text-[9px] font-bold text-slate-600">{index + 1}</span>
@@ -177,7 +187,7 @@ export default function AgentOrders({ agent: rawAgent }: { agent: string }) {
                 </div>
 
                 {/* المحتوى */}
-                <div className="grid grid-cols-2 gap-2 bg-white p-2.5">
+                <div className={`grid grid-cols-2 gap-2 bg-white p-2.5 ${locked(o) ? "pointer-events-none opacity-75" : ""}`}>
                   {/* الهاتف + واتساب */}
                   <label className="col-span-2 text-[10px] font-bold text-slate-400">📞 Téléphone
                     <div className="flex items-center gap-1">
@@ -294,8 +304,8 @@ export default function AgentOrders({ agent: rawAgent }: { agent: string }) {
                   const input = "h-full w-full border-0 bg-transparent px-1 py-1 outline-none";
                   const style = { background: bg, textDecoration: strike ? "line-through" : "none" };
                   return (
-                    <tr key={o.id} style={{ background: bg }}>
-                      <td className="border border-slate-400 text-center" style={style}>{index + 1}</td>
+                    <tr key={o.id} style={{ background: bg }} className={locked(o) ? "cmd-locked" : ""}>
+                      <td className="border border-slate-400 text-center" style={style} title={locked(o) ? "🔒 مقفولة — Livrée" : undefined}>{index + 1}{locked(o) ? " 🔒" : ""}</td>
                       <td className="border border-slate-400 p-0"><input type="date" value={o.dateCreation} onChange={(e) => set(o.id, "dateCreation", e.target.value)} className={input} style={style} /></td>
                       <td className="border border-slate-400 p-0"><input type="date" value={o.dateConfirmation} onChange={(e) => set(o.id, "dateConfirmation", e.target.value)} className={input} style={style} /></td>
                       <td className="border border-slate-400 p-0"><select value={o.statut} onChange={(e) => set(o.id, "statut", e.target.value)} className={input} style={style}>{statusOptions.map((x) => <option key={x} value={x}>{x || "—"}</option>)}</select></td>

@@ -150,6 +150,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
     upd: (id, patch) => {
       const before = orders.find((x) => x.id === id);
+      // 🔒 Verrouillage: الطلبيات المسلّمة (Livrée) ما يبدلها غير الأدمين
+      if (before && before.livraison === "Livrée" && currentUser?.role !== "admin") return;
       setOrders((p) => p.map((x) => x.id === id ? { ...x, ...patch } : x));
       if (!before) return;
       const changes = (Object.keys(patch) as (keyof Order)[])
@@ -168,6 +170,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
     del: (id) => {
       const gone = orders.find((x) => x.id === id);
+      // 🔒 حتى المسح ممنوع على البنات فـ الطلبيات المسلّمة
+      if (gone && gone.livraison === "Livrée" && currentUser?.role !== "admin") return;
       setOrders((p) => p.filter((x) => x.id !== id));
       if (gone) log("delete", gone, { snapshot: orderSummary(gone) });
     },
