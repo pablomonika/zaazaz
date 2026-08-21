@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+/* Scrollbars discrètes */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* 📱 Mobile : jamais de scroll horizontal au niveau page */
+html, body { overflow-x: hidden; overscroll-behavior-y: none; }
+
+/* ═══ رسالة الترحيب ═══ */
+@keyframes welcomeIn {
+  0% { opacity: 0; transform: translateY(28px) scale(0.88); }
+  60% { opacity: 1; transform: translateY(-4px) scale(1.02); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes welcomeOut {
+  to { opacity: 0; transform: translateY(-18px) scale(0.92); }
+}
+@keyframes welcomeBar { from { width: 100%; } to { width: 0%; } }
+@keyframes welcomeGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.35); }
+  50% { box-shadow: 0 0 0 14px rgba(99, 102, 241, 0); }
+}
