@@ -27,3 +27,17 @@ html, body { overflow-x: hidden; overscroll-behavior-y: none; }
 
 /* 🔒 الطلبيات المقفولة (Livrée) — غير الأدمين كايبدلهم */
 tr.cmd-locked td { pointer-events: none; opacity: 0.72; }
+
+/* ═══ Fill Handle (بحال Google Sheets) ═══ */
+td.fill-cell { position: relative; }
+td.fill-src { box-shadow: inset 0 0 0 2px #1a73e8; }
+td.fill-preview { box-shadow: inset 0 0 0 2px #1a73e8 !important; background-color: rgba(26, 115, 232, 0.10) !important; }
+.fill-handle {
+  position: absolute; right: 0; bottom: 0;
+  width: 9px; height: 9px;
+  background: #1a73e8; border: 1.5px solid #fff; border-radius: 1px;
+  cursor: crosshair; z-index: 40;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.35);
+}
+.fill-handle:hover { transform: scale(1.25); }
+body.fill-dragging, body.fill-dragging * { user-select: none !important; cursor: crosshair !important; }

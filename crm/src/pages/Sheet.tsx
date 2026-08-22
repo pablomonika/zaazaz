@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useStore, exportCSV } from "../store";
 import { ORIGIN_OPTIONS, type Order } from "../data/orders";
 import DualScroll from "../components/DualScroll";
@@ -7,6 +7,7 @@ import { useVilles } from "../data/villes";
 import ImportExcel from "./ImportExcel";
 import CityInput from "../components/CityInput";
 import Btn from "../components/Btn";
+import { fillSeries } from "../data/fillSeries";
 import { buildDupIndex, dupGroups } from "../data/duplicates";
 
 const fmt = (n: number) => n.toLocaleString("fr-FR");
@@ -45,18 +46,37 @@ const PRESETS: { label: string; conds: Omit<Cond, "id">[] }[] = [
   { label: "📦 Livrée", conds: [{ field: "livraison", op: "eq", value: "Livrée" }] },
 ];
 
-function Cell({ val, onChange, w, bg, type = "text", opts, list, strike = "none" }: { val: string | number; onChange: (v: string) => void; w: number; bg?: string; type?: string; opts?: string[]; list?: string; strike?: string }) {
+type FillApi = {
+  sel: { idx: number; key: keyof Order } | null;
+  setSel: (s: { idx: number; key: keyof Order }) => void;
+  drag: { key: keyof Order; fromIdx: number; toIdx: number } | null;
+  start: (e: React.MouseEvent, idx: number, key: keyof Order) => void;
+};
+
+function Cell({ val, onChange, w, bg, type = "text", opts, list, strike = "none", fkey, fidx, fill }: {
+  val: string | number; onChange: (v: string) => void; w: number; bg?: string; type?: string; opts?: string[]; list?: string; strike?: string;
+  fkey?: keyof Order; fidx?: number; fill?: FillApi;
+}) {
   const style = { minWidth: w, background: bg || "" };
+  const withFill = !!(fill && fkey !== undefined && fidx !== undefined);
+  const isSrc = withFill && !!fill!.sel && fill!.sel!.idx === fidx && fill!.sel!.key === fkey;
+  const inPrev = withFill && !!fill!.drag && fill!.drag!.key === fkey && fidx! >= fill!.drag!.fromIdx && fidx! <= fill!.drag!.toIdx;
+  const tdCls = "border border-slate-300 p-0" + (withFill ? ` fill-cell${isSrc ? " fill-src" : ""}${inPrev ? " fill-preview" : ""}` : "");
+  const tdProps = withFill ? { "data-field": String(fkey), onFocus: () => fill!.setSel({ idx: fidx!, key: fkey! }) } : {};
+  const handle = isSrc ? <span className="fill-handle" onMouseDown={(e) => fill!.start(e, fidx!, fkey!)} title="اسحب للتعبئة (Fill)" /> : null;
+
   if (opts) return (
-    <td style={style} className="border border-slate-300 p-0">
+    <td style={style} className={tdCls} {...tdProps}>
       <select value={String(val)} onChange={(e) => onChange(e.target.value)} className="h-full w-full border-0 bg-transparent px-1 py-[3px] text-xs font-semibold outline-none" style={{ background: bg || "", textDecoration: strike }}>
         {opts.map((o) => <option key={o} value={o}>{o || "—"}</option>)}
       </select>
+      {handle}
     </td>
   );
   return (
-    <td style={style} className="border border-slate-300 p-0">
+    <td style={style} className={tdCls} {...tdProps}>
       <input type={type} list={list} value={val} onChange={(e) => onChange(e.target.value)} className="h-full w-full border-0 bg-transparent px-1 py-[3px] text-xs outline-none" style={{ background: bg || "", textDecoration: strike }} />
+      {handle}
     </td>
   );
 }
@@ -192,6 +212,91 @@ export default function Sheet() {
       </div>
     </th>
   );
+
+  /* ═══ 🖱️ Fill Handle (بحال Google Sheets) ═══ */
+  const [fillSel, setFillSel] = useState<{ idx: number; key: keyof Order } | null>(null);
+  const [fillDrag, setFillDrag] = useState<{ key: keyof Order; fromIdx: number; toIdx: number } | null>(null);
+  const undoStack = useRef<Array<Array<{ id: number; key: keyof Order; old: string }>>>([]);
+  const filteredRef = useRef(filtered);
+  useEffect(() => { filteredRef.current = filtered; });
+
+  const applyFill = (d: { key: keyof Order; fromIdx: number; toIdx: number }) => {
+    const list = filteredRef.current;
+    const srcRow = list[d.fromIdx - 1];
+    if (!srcRow) return;
+    const isDate = d.key === "dateCreation" || d.key === "dateConfirmation";
+    const isNum = ["qte", "prix", "upsell", "commission"].includes(String(d.key));
+    const srcVal = String(srcRow[d.key] ?? "");
+    const prevRow = list[d.fromIdx - 2];
+    const prevVal = prevRow ? String(prevRow[d.key] ?? "") : null;
+    const vals = fillSeries(srcVal, prevVal, d.toIdx - d.fromIdx + 1, isDate, isNum);
+    const batch: { id: number; key: keyof Order; old: string }[] = [];
+    for (let i = d.fromIdx; i <= d.toIdx; i++) {
+      const row = list[i];
+      if (!row) continue;
+      batch.push({ id: row.id, key: d.key, old: String(row[d.key] ?? "") });
+      ch(row.id, d.key, vals[i - d.fromIdx]);
+    }
+    if (batch.length) {
+      undoStack.current.push(batch);
+      showToast(`✅ تعبأت ${batch.length} خلايا — Ctrl+Z للتراجع`);
+    }
+  };
+
+  const startFill = (e: React.MouseEvent, idx: number, key: keyof Order) => {
+    e.preventDefault();
+    e.stopPropagation();
+    document.body.classList.add("fill-dragging");
+    const move = (ev: MouseEvent) => {
+      const els = document.elementsFromPoint(ev.clientX, ev.clientY);
+      let trEl: HTMLElement | null = null;
+      for (const el of els) {
+        const t = (el as HTMLElement).closest?.("tr[data-fill-idx]");
+        if (t) { trEl = t as HTMLElement; break; }
+      }
+      const ti = trEl ? Number(trEl.getAttribute("data-fill-idx")) : NaN;
+      if (!isNaN(ti) && ti > idx) setFillDrag({ key, fromIdx: idx + 1, toIdx: ti });
+      else setFillDrag(null);
+    };
+    const up = () => {
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", up);
+      document.body.classList.remove("fill-dragging");
+      setFillDrag((d) => { if (d) applyFill(d); return null; });
+    };
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
+  };
+
+  const fillApi: FillApi = { sel: fillSel, setSel: setFillSel, drag: fillDrag, start: startFill };
+
+  /* ↩️ Ctrl+Z = تراجع على التعبئة (غير ملي ماشي داخل إنبوت) */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
+        const a = document.activeElement;
+        if (a && ["INPUT", "TEXTAREA", "SELECT"].includes(a.tagName)) return;
+        const batch = undoStack.current.pop();
+        if (!batch) return;
+        e.preventDefault();
+        batch.forEach((b) => upd(b.id, { [b.key]: b.old } as Partial<Order>));
+        showToast("↩️ تراجع على التعبئة");
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [upd]);
+
+  /* props ديال الـ fill للخانات المخصوصة */
+  const fillTdCls = (key: keyof Order, idx: number) => {
+    const isSrc = fillSel && fillSel.idx === idx && fillSel.key === key;
+    const inPrev = fillDrag && fillDrag.key === key && idx >= fillDrag.fromIdx && idx <= fillDrag.toIdx;
+    return `fill-cell${isSrc ? " fill-src" : ""}${inPrev ? " fill-preview" : ""}`;
+  };
+  const FillHandle = ({ idx, key: fk }: { idx: number; key: keyof Order }) =>
+    fillSel && fillSel.idx === idx && fillSel.key === fk
+      ? <span className="fill-handle" onMouseDown={(e) => startFill(e, idx, fk)} title="اسحب للتعبئة (Fill)" />
+      : null;
 
   /* ── Sélection multiple ── */
   const toggleSel = (id: number) => setSel((p) => {
@@ -519,22 +624,23 @@ export default function Sheet() {
               const strike = (isRetour || isAnnule) ? "line-through" : "none";
               const rowStyle = { background: rowBg, textDecoration: strike };
               return (
-              <tr key={o.id} style={{ background: rowBg }} className="hover:brightness-95">
+              <tr key={o.id} style={{ background: rowBg }} className="hover:brightness-95" data-fill-idx={idx}>
                 <td className="border border-slate-300 text-center" style={{ background: rowBg }}>
                   <input type="checkbox" checked={sel.has(o.id)} onChange={() => toggleSel(o.id)} className="accent-emerald-600" title="تحديد الطلبية" />
                 </td>
                 <td className="border border-slate-300 px-1 text-center text-slate-500" style={rowStyle}>{idx + 1}</td>
-                <Cell val={o.dateCreation} onChange={(v) => ch(o.id, "dateCreation", v)} w={88} type="date" bg={rowBg} strike={strike} />
-                <Cell val={o.dateConfirmation} onChange={(v) => ch(o.id, "dateConfirmation", v)} w={88} type="date" bg={rowBg} strike={strike} />
-                <Cell val={o.statut} onChange={(v) => ch(o.id, "statut", v)} w={90} bg={rowBg} strike={strike} opts={["", "Confirmé", "Annulé", "Rappel", "Suivé", "Appel-1", "Appel-2", "Appel-3", "Appel-4", "Appel-5", "Appel-6", "Whatssap"]} />
-                <Cell val={o.remarques} onChange={(v) => ch(o.id, "remarques", v)} w={180} bg={rowBg} strike={strike} />
-                <Cell val={o.idCmd} onChange={(v) => ch(o.id, "idCmd", v)} w={28} bg={rowBg} strike={strike} />
-                <Cell val={o.nom} onChange={(v) => ch(o.id, "nom", v)} w={145} bg={rowBg} strike={strike} />
-                <td className="border border-slate-300 p-0" style={{ minWidth: 105, background: rowBg }}>
+                <Cell fill={fillApi} fidx={idx} fkey="dateCreation" val={o.dateCreation} onChange={(v) => ch(o.id, "dateCreation", v)} w={88} type="date" bg={rowBg} strike={strike} />
+                <Cell fill={fillApi} fidx={idx} fkey="dateConfirmation" val={o.dateConfirmation} onChange={(v) => ch(o.id, "dateConfirmation", v)} w={88} type="date" bg={rowBg} strike={strike} />
+                <Cell fill={fillApi} fidx={idx} fkey="statut" val={o.statut} onChange={(v) => ch(o.id, "statut", v)} w={90} bg={rowBg} strike={strike} opts={["", "Confirmé", "Annulé", "Rappel", "Suivé", "Appel-1", "Appel-2", "Appel-3", "Appel-4", "Appel-5", "Appel-6", "Whatssap"]} />
+                <Cell fill={fillApi} fidx={idx} fkey="remarques" val={o.remarques} onChange={(v) => ch(o.id, "remarques", v)} w={180} bg={rowBg} strike={strike} />
+                <Cell fill={fillApi} fidx={idx} fkey="idCmd" val={o.idCmd} onChange={(v) => ch(o.id, "idCmd", v)} w={28} bg={rowBg} strike={strike} />
+                <Cell fill={fillApi} fidx={idx} fkey="nom" val={o.nom} onChange={(v) => ch(o.id, "nom", v)} w={145} bg={rowBg} strike={strike} />
+                <td className={`border border-slate-300 p-0 ${fillTdCls("telephone", idx)}`} style={{ minWidth: 105, background: rowBg }} data-field="telephone" onFocus={() => setFillSel({ idx, key: "telephone" })}>
                   <div className="flex items-center">
                     <input value={o.telephone} onChange={(e) => ch(o.id, "telephone", e.target.value)} style={{ textDecoration: strike }} className={`flex-1 border-0 bg-transparent px-1 py-[3px] text-xs outline-none min-w-0 ${dupIdx.dupOrders.has(o.id) ? "font-bold text-red-700" : ""}`} />
                     {dupIdx.dupOrders.has(o.id) && <span title="🚨 مكررة!" className="shrink-0 text-[10px]">🚨</span>}
                     {o.telephone && <a href={`https://wa.me/${o.telephone.replace(/[^0-9]/g, "")}`} target="_blank" rel="noreferrer" className="shrink-0 px-0.5 text-emerald-600">💬</a>}
+                    <FillHandle idx={idx} key="telephone" />
                   </div>
                 </td>
                 <td className="border border-slate-300 p-0" style={{ minWidth: 115, background: rowBg }}>
@@ -543,10 +649,10 @@ export default function Sheet() {
                     className="h-full w-full border-0 bg-transparent px-1 py-[3px] text-xs outline-none"
                     style={{ background: rowBg, textDecoration: strike }} />
                 </td>
-                <Cell val={o.adresse} onChange={(v) => ch(o.id, "adresse", v)} w={190} bg={rowBg} strike={strike} />
-                <Cell val={o.qte} onChange={(v) => ch(o.id, "qte", v)} w={33} type="number" bg={rowBg} strike={strike} />
-                <Cell val={o.prix} onChange={(v) => ch(o.id, "prix", v)} w={48} type="number" bg={rowBg} strike={strike} />
-                <td style={{ minWidth: 200, background: rowBg }} className="border border-slate-300 p-0">
+                <Cell fill={fillApi} fidx={idx} fkey="adresse" val={o.adresse} onChange={(v) => ch(o.id, "adresse", v)} w={190} bg={rowBg} strike={strike} />
+                <Cell fill={fillApi} fidx={idx} fkey="qte" val={o.qte} onChange={(v) => ch(o.id, "qte", v)} w={33} type="number" bg={rowBg} strike={strike} />
+                <Cell fill={fillApi} fidx={idx} fkey="prix" val={o.prix} onChange={(v) => ch(o.id, "prix", v)} w={48} type="number" bg={rowBg} strike={strike} />
+                <td style={{ minWidth: 200, background: rowBg }} className={`border border-slate-300 p-0 ${fillTdCls("produit", idx)}`} data-field="produit" onFocus={() => setFillSel({ idx, key: "produit" })}>
                   <input list="catalog-products" value={o.produit}
                     onChange={(e) => {
                       const v = e.target.value;
@@ -556,21 +662,23 @@ export default function Sheet() {
                     }}
                     className="h-full w-full border-0 bg-transparent px-1 py-[3px] text-xs outline-none"
                     style={{ background: rowBg, textDecoration: strike }} />
+                  <FillHandle idx={idx} key="produit" />
                 </td>
-                <Cell val={o.livraison} onChange={(v) => ch(o.id, "livraison", v)} w={110} bg={rowBg} strike={strike} opts={["", "Livrée", "Retour", "Out Of Stock", "Expédier vers"]} />
-                <Cell val={o.upsell} onChange={(v) => ch(o.id, "upsell", v)} w={40} type="number" bg={rowBg} strike={strike} />
-                <Cell val={o.carousell} onChange={(v) => ch(o.id, "carousell", v)} w={120} bg={rowBg} strike={strike} />
-                <Cell val={o.agent} onChange={(v) => ch(o.id, "agent", v)} w={90} bg={rowBg} strike={strike} opts={["", ...agentNames]} />
-                <td className="border border-slate-300 p-0" style={{ minWidth: 210, background: rowBg }}>
+                <Cell fill={fillApi} fidx={idx} fkey="livraison" val={o.livraison} onChange={(v) => ch(o.id, "livraison", v)} w={110} bg={rowBg} strike={strike} opts={["", "Livrée", "Retour", "Out Of Stock", "Expédier vers"]} />
+                <Cell fill={fillApi} fidx={idx} fkey="upsell" val={o.upsell} onChange={(v) => ch(o.id, "upsell", v)} w={40} type="number" bg={rowBg} strike={strike} />
+                <Cell fill={fillApi} fidx={idx} fkey="carousell" val={o.carousell} onChange={(v) => ch(o.id, "carousell", v)} w={120} bg={rowBg} strike={strike} />
+                <Cell fill={fillApi} fidx={idx} fkey="agent" val={o.agent} onChange={(v) => ch(o.id, "agent", v)} w={90} bg={rowBg} strike={strike} opts={["", ...agentNames]} />
+                <td className={`border border-slate-300 p-0 ${fillTdCls("link", idx)}`} style={{ minWidth: 210, background: rowBg }} data-field="link" onFocus={() => setFillSel({ idx, key: "link" })}>
                   <div className="flex items-center">
                     <input value={o.link} onChange={(e) => ch(o.id, "link", e.target.value)} className="flex-1 border-0 bg-transparent px-1 py-[3px] text-xs outline-none text-blue-600 underline min-w-0" />
                     {o.link && <a href={o.link} target="_blank" rel="noreferrer" className="shrink-0 px-0.5">🔗</a>}
+                    <FillHandle idx={idx} key="link" />
                   </div>
                 </td>
-                <Cell val={o.carosellFlag} onChange={(v) => ch(o.id, "carosellFlag", v)} w={60} bg={rowBg} strike={strike} />
-                <Cell val={o.originLead} onChange={(v) => ch(o.id, "originLead", v)} w={85} bg={rowBg} strike={strike} opts={ORIGIN_OPTIONS} />
-                <Cell val={o.commission} onChange={(v) => ch(o.id, "commission", v)} w={68} type="number" bg={rowBg} strike={strike} />
-                <Cell val={o.fees} onChange={(v) => ch(o.id, "fees", v)} w={48} bg={rowBg} strike={strike} />
+                <Cell fill={fillApi} fidx={idx} fkey="carosellFlag" val={o.carosellFlag} onChange={(v) => ch(o.id, "carosellFlag", v)} w={60} bg={rowBg} strike={strike} />
+                <Cell fill={fillApi} fidx={idx} fkey="originLead" val={o.originLead} onChange={(v) => ch(o.id, "originLead", v)} w={85} bg={rowBg} strike={strike} opts={ORIGIN_OPTIONS} />
+                <Cell fill={fillApi} fidx={idx} fkey="commission" val={o.commission} onChange={(v) => ch(o.id, "commission", v)} w={68} type="number" bg={rowBg} strike={strike} />
+                <Cell fill={fillApi} fidx={idx} fkey="fees" val={o.fees} onChange={(v) => ch(o.id, "fees", v)} w={48} bg={rowBg} strike={strike} />
                 <td className="border border-slate-300 text-center" style={{ background: rowBg }}>
                   <button onClick={() => del(o.id)} className="text-red-500 hover:text-red-700 text-sm">✕</button>
                 </td>
