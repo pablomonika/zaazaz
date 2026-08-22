@@ -19,7 +19,10 @@ import ChatWidget from "./components/ChatWidget";
 import CrmAds from "./pages/CrmAds";
 import Salaire from "./pages/Salaire";
 import PerfSources from "./pages/PerfSources";
+import Statistique from "./pages/Statistique";
 import WelcomeOverlay from "./components/WelcomeOverlay";
+import LogoutIcon from "./components/LogoutIcon";
+import { cloudPush } from "./data/cloud";
 import { PeriodProvider, PeriodBar } from "./period";
 import { SHEETS, type SheetData } from "./data/sheets";
 import { touchSession } from "./data/worktimes";
@@ -148,8 +151,8 @@ function Workspace() {
     if (!isAdmin && currentUser?.agent) setTab(currentUser.agent);
   }, [isAdmin, currentUser]);
 
-  useEffect(() => { localStorage.setItem(TABS_KEY, JSON.stringify(tabs)); }, [tabs]);
-  useEffect(() => { localStorage.setItem(CUSTOM_KEY, JSON.stringify(custom)); }, [custom]);
+  useEffect(() => { localStorage.setItem(TABS_KEY, JSON.stringify(tabs)); cloudPush(TABS_KEY); }, [tabs]);
+  useEffect(() => { localStorage.setItem(CUSTOM_KEY, JSON.stringify(custom)); cloudPush(CUSTOM_KEY); }, [custom]);
 
   // Les pages des filles et "Work Team" ne s'affichent plus dans la barre du bas
   // (elles restent accessibles via le bouton 👥 Work Team).
@@ -247,7 +250,9 @@ function Workspace() {
       </span>
       <span className="hidden max-w-[140px] truncate text-[11px] font-semibold text-slate-600 sm:block">{currentUser.username}</span>
       {isAdmin && <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-indigo-600">Admin</span>}
-      <button onClick={logout} title="خروج" className="grid h-6 w-6 place-items-center rounded-full text-slate-400 transition hover:bg-red-50 hover:text-red-600">⏻</button>
+      <button onClick={logout} title="خروج — تسجيل الخروج" className="grid h-6 w-6 place-items-center rounded-full text-slate-400 transition hover:bg-red-50 hover:text-red-600 hover:scale-110">
+        <LogoutIcon className="h-3.5 w-3.5" />
+      </button>
     </div>
   );
 
@@ -342,6 +347,7 @@ function Workspace() {
           {tab === "Sheet129" && <div className="h-full overflow-auto"><BlankSheet name="Sheet129" /></div>}
           {tab === "suivi confirmation" && <SuiviConfirmationView />}
           {tab === "Dashboard performance" && <PerfSources />}
+          {tab === "statistique" && <Statistique />}
           {tab === "إدارة المستخدمين" && <UsersAdmin />}
           {tab === "CRM Ads" && <div className="h-full overflow-auto"><CrmAds /></div>}
           {tab === "Salaire" && <div className="h-full overflow-auto"><Salaire /></div>}
@@ -361,7 +367,7 @@ function Workspace() {
               <div className="flex-1 overflow-hidden"><AgentOrders agent={tab} /></div>
             </div>
           )}
-          {tab !== "Dashboard performance" && !CUSTOM_VIEWS.includes(tab) && !agentNames.includes(tab) && sheetData && <Grid name={tab} data={sheetData} />}
+          {tab !== "Dashboard performance" && tab !== "statistique" && !CUSTOM_VIEWS.includes(tab) && !agentNames.includes(tab) && sheetData && <Grid name={tab} data={sheetData} />}
         </div>
 
         {/* ═══ Barre inférieure : barre d'outils professionnelle ═══ */}
@@ -393,10 +399,10 @@ function Workspace() {
 
           {/* ── Déconnexion ── */}
           <button onClick={logout} title="تسجيل الخروج"
-            className="ml-auto grid h-9 w-9 shrink-0 place-items-center rounded-xl border-2 border-red-300 bg-white text-base text-red-600 shadow-sm transition-all duration-150 hover:border-red-400 hover:bg-red-50 hover:shadow hover:scale-105 active:scale-[0.94]">
-            ⏻
+            className="ml-auto grid h-9 w-9 shrink-0 place-items-center rounded-xl border-2 border-red-300 bg-white text-red-600 shadow-sm transition-all duration-150 hover:border-red-400 hover:bg-red-50 hover:shadow hover:scale-105 active:scale-[0.94]">
+            <LogoutIcon className="h-4.5 w-4.5" />
           </button>
-          <span className="shrink-0 px-1 text-[9px] font-bold text-slate-300" title="نسخة التطبيق">v1.8</span>
+          <span className="shrink-0 px-1 text-[9px] font-bold text-slate-300" title="نسخة التطبيق">v2.0</span>
         </footer>
 
         {/* 💬 Chat interne Admin ⇄ Filles */}

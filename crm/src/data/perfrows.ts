@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { cloudPush, registerRefresh } from "./cloud";
 
 /* ═══════════════════════ Perf Rows — جداول Dashboard performance ═══════════════════════
    📊 حنا كانحطو غير: المنتوج + التاريخ + تمن البيع
@@ -33,7 +34,9 @@ function persist(list: PerfRow[]) {
   cache = list;
   try { localStorage.setItem(KEY, JSON.stringify(list)); } catch { /* ignore */ }
   listeners.forEach((l) => l());
+  cloudPush(KEY);
 }
+registerRefresh(KEY, () => { cache = null; listeners.forEach((l) => l()); });
 
 export function addPerfRow(source: string, produit: string, date: string, prix: number) {
   const list = cache ?? load();

@@ -38,8 +38,11 @@ export function loadLogs(): LogEntry[] {
   return [];
 }
 
+import { cloudPush } from "./data/cloud";
+
 export function saveLogs(logs: LogEntry[]) {
   localStorage.setItem(LOG_KEY, JSON.stringify(logs.slice(0, LOG_LIMIT)));
+  cloudPush(LOG_KEY);
 }
 
 export function orderSummary(o: Partial<Order>) {

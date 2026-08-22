@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useStore } from "../store";
 import { usePeriod } from "../period";
 import { useSessions, STALE_MS } from "../data/worktimes";
+import { cloudPush } from "../data/cloud";
 import type { Order } from "../data/orders";
 
 const nf = (n: number) => n.toLocaleString("fr-FR");
@@ -72,7 +73,7 @@ export default function WorkTeam({ onOpen, onRanking, onLive }: { onOpen: (agent
     return {};
   });
   useEffect(() => {
-    try { localStorage.setItem(PHOTOS_KEY, JSON.stringify(photos)); }
+    try { localStorage.setItem(PHOTOS_KEY, JSON.stringify(photos)); cloudPush(PHOTOS_KEY); }
     catch { alert("Espace de stockage plein — impossible d'enregistrer la photo."); }
   }, [photos]);
 

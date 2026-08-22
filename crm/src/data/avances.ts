@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { cloudPush, registerRefresh } from "./cloud";
 
 /* ═══════════════════════ Avances — تسبيقات السالير ═══════════════════════
    💰 البنت كتطلب تسبيق (Avance) على السالير ديالها → كايتسجل هنا
@@ -33,7 +34,9 @@ function persist(list: Avance[]) {
   cache = list;
   try { localStorage.setItem(KEY, JSON.stringify(list)); } catch { /* ignore */ }
   listeners.forEach((l) => l());
+  cloudPush(KEY);
 }
+registerRefresh(KEY, () => { cache = null; listeners.forEach((l) => l()); });
 
 export function addAvance(agent: string, amount: number, note = "") {
   const list = cache ?? load();

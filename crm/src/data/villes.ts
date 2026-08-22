@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { cloudPush, registerRefresh } from "./cloud";
 
 /* ═══════════════════════════════════════════════════════════════
    LES VILLES — villes de livraison (Digylock) + frais de livraison
@@ -556,6 +557,7 @@ export function saveVilles(list: Ville[]) {
   cache = list;
   try { localStorage.setItem(VILLES_KEY, JSON.stringify(list)); } catch { /* ignore */ }
   listeners.forEach((l) => l());
+  cloudPush(VILLES_KEY);
 }
 
 export function resetVilles() {
@@ -577,3 +579,5 @@ export function useVilles(): Ville[] {
     () => DEFAULT_VILLES,
   );
 }
+
+registerRefresh(VILLES_KEY, () => { cache = null; listeners.forEach((l) => l()); });

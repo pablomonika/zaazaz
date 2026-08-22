@@ -3,6 +3,7 @@ import { useStore } from "../store";
 import { useAuth } from "../auth";
 import type { Order } from "../data/orders";
 import { PRODUITS_CATALOG, PRODUITS_DU_MOIS, ZONES_LIVRAISON } from "../data/produits";
+import { cloudPush } from "../data/cloud";
 
 const fmt = (n: number) => n.toLocaleString("fr-FR");
 const th = "border border-slate-400 bg-[#4a86c8] text-white px-2 py-1 text-[11px] font-bold text-center whitespace-nowrap";
@@ -137,7 +138,7 @@ export function Produits() {
     } catch { /* */ }
     return PRODUITS_CATALOG.map((p) => ({ nom: p[0], link: p[1], prix: p[2], commission: "35", stock: "" }));
   });
-  useEffect(() => { localStorage.setItem(CATALOG_KEY, JSON.stringify(catalog)); }, [catalog]);
+  useEffect(() => { localStorage.setItem(CATALOG_KEY, JSON.stringify(catalog)); cloudPush(CATALOG_KEY); }, [catalog]);
 
   const empty: Prod = { nom: "", link: "", prix: "", commission: "35", stock: "" };
   const [form, setForm] = useState<Prod>(empty);

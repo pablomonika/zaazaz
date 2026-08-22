@@ -3,6 +3,7 @@ import type { SheetData } from "../data/sheets";
 import DualScroll from "../components/DualScroll";
 import { useAuth } from "../auth";
 import { useStore } from "../store";
+import { cloudPush } from "../data/cloud";
 
 function exportCSV(headers: string[], rows: string[][], name: string) {
   const csv = [headers, ...rows].map((r) => r.map((c) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(",")).join("\r\n");
@@ -81,7 +82,7 @@ export default function Grid({ name, data }: { name: string; data: SheetData }) 
   const [draft, setDraft] = useState<string[]>(() => Array(data.headers.length).fill(""));
   const [editIndex, setEditIndex] = useState<number | null>(null);
 
-  useEffect(() => { localStorage.setItem(KEY, JSON.stringify(rows)); }, [rows, KEY]);
+  useEffect(() => { localStorage.setItem(KEY, JSON.stringify(rows)); cloudPush(KEY); }, [rows, KEY]);
   useEffect(() => { setDraft(Array(data.headers.length).fill("")); setEditIndex(null); setShowForm(false); }, [name, data.headers.length]);
 
   const cols = data.headers.length;

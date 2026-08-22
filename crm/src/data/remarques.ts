@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { cloudPush, registerRefresh } from "./cloud";
 
 /* ═══════════════════════ Remarques ═══════════════════════
    📝 ملاحظات البنات — كل بنت عندها ملاحظاتها الخاصة
@@ -32,7 +33,9 @@ function persist(list: Remarque[]) {
   cache = list;
   try { localStorage.setItem(KEY, JSON.stringify(list)); } catch { /* ignore */ }
   listeners.forEach((l) => l());
+  cloudPush(KEY);
 }
+registerRefresh(KEY, () => { cache = null; listeners.forEach((l) => l()); });
 
 export function addRemarque(agent: string, text: string) {
   const t = text.trim();

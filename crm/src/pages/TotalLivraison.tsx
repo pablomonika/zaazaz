@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useStore } from "../store";
+import { useAuth } from "../auth";
 import { usePeriod } from "../period";
 import { useVilles, priceForCity } from "../data/villes";
 import type { Order } from "../data/orders";
@@ -103,7 +104,7 @@ function Kpi({ label, value, sub, color, bg, onClick }: { label: string; value: 
 const STATUT_OPTIONS = ["", "Confirmé", "Annulé", "Rappel", "Suivé", "Appel-1", "Appel-2", "Appel-3", "Appel-4", "Appel-5", "Appel-6", "Whatssap"];
 const LIVRAISON_OPTIONS = ["", "Livrée", "Retour", "Out Of Stock", "Expédier vers"];
 
-function OrdersDetail({ title, color, list, onBack, readOnly = false }: { title: string; color: string; list: Order[]; onBack: () => void; readOnly?: boolean }) {
+export function OrdersDetail({ title, color, list, onBack, readOnly = false }: { title: string; color: string; list: Order[]; onBack: () => void; readOnly?: boolean }) {
   const { upd, del } = useStore();
   const villes = useVilles();
   const [q, setQ] = useState("");
@@ -236,6 +237,8 @@ type DetailKey = null | { title: string; color: string; fn: (o: Order) => boolea
 
 export default function TotalLivraison({ agent }: { agent: string }) {
   const { orders } = useStore();
+  const { currentUser } = useAuth();
+  const isAdminUser = currentUser?.role === "admin";
   const { inRange, label } = usePeriod();
   const [days, setDays] = useState(7);
   const [topAll, setTopAll] = useState(false);
@@ -248,7 +251,7 @@ export default function TotalLivraison({ agent }: { agent: string }) {
 
   // readOnly = true → page en lecture seule (aucune modification / suppression)
   const open = (title: string, color: string, fn: (o: Order) => boolean, readOnly = false) =>
-    () => setDetail({ title, color, fn, readOnly });
+    () => setDetail({ title, color, fn, readOnly: readOnly && !isAdminUser }); // 🛡️ الأدمين عندو كل الصلاحيات
 
   const s = useMemo(() => {
     const count = (fn: (o: Order) => boolean) => mine.filter(fn).length;

@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { cloudPush, registerRefresh } from "./cloud";
 
 /* ═══════════════════════ Ad Spend — تكاليف الإعلانات ═══════════════════════
    💸 حنا كندخلو المصروف (مثلا 200 درهم لمريم فـ نظارة القراءة من Leader)
@@ -34,7 +35,9 @@ function persist(list: AdSpend[]) {
   cache = list;
   try { localStorage.setItem(KEY, JSON.stringify(list)); } catch { /* ignore */ }
   listeners.forEach((l) => l());
+  cloudPush(KEY);
 }
+registerRefresh(KEY, () => { cache = null; listeners.forEach((l) => l()); });
 
 export function addSpend(date: string, agent: string, produit: string, source: string, amount: number) {
   const list = cache ?? load();

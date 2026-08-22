@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { getSeedOrders, AGENTS_SUMMARY, GLOBAL_STATS, type Order } from "./data/orders";
 import { useAuth } from "./auth";
 import { loadLogs, saveLogs, orderSummary, FIELD_LABELS, type LogEntry, type LogAction } from "./history";
+import { cloudPush } from "./data/cloud";
 
 const KEY = "afrizon_orders_v5";
 const AGENTS_KEY = "afrizon_agent_names_v1";
@@ -101,9 +102,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return 0;
   });
 
-  useEffect(() => { localStorage.setItem(KEY, JSON.stringify(orders)); }, [orders]);
-  useEffect(() => { localStorage.setItem(AGENTS_KEY, JSON.stringify(agentNames)); }, [agentNames]);
-  useEffect(() => { saveLogs(logs); }, [logs]);
+  useEffect(() => { localStorage.setItem(KEY, JSON.stringify(orders)); cloudPush(KEY); }, [orders]);
+  useEffect(() => { localStorage.setItem(AGENTS_KEY, JSON.stringify(agentNames)); cloudPush(AGENTS_KEY); }, [agentNames]);
+  useEffect(() => { saveLogs(logs); cloudPush("afrizon_history_v1"); }, [logs]);
 
   const record = (entries: Omit<LogEntry, "id" | "at" | "user">[]) => {
     if (!entries.length) return;

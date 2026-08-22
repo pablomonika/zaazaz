@@ -82,7 +82,7 @@ function Cell({ val, onChange, w, bg, type = "text", opts, list, strike = "none"
 }
 
 export default function Sheet() {
-  const { orders: allOrders, agentNames, gs, upd, add, del, reset, saveCheckpoint, savedAt, savedCount } = useStore();
+  const { orders: allOrders, agentNames, upd, add, del, reset, saveCheckpoint, savedAt, savedCount } = useStore();
   const { inRange, label } = usePeriod();
   const [q, setQ] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -356,24 +356,6 @@ export default function Sheet() {
     };
   }, [orders]);
 
-  const agentRows = useMemo(() => agentNames.map((name) => {
-    const list = orders.filter((o) => o.agent.toLowerCase() === name.toLowerCase());
-    const confirme = list.filter((o) => o.statut === "Confirmé").length;
-    const rappel = list.filter((o) => o.statut === "Rappel").length;
-    const annule = list.filter((o) => o.statut === "Annulé").length;
-    const livre = list.filter((o) => o.livraison === "Livrée").length;
-    const retour = list.filter((o) => o.livraison === "Retour").length;
-    const expedierVers = list.filter((o) => o.livraison === "Expédier vers").length;
-    const whatssap = list.filter((o) => o.statut === "Whatssap" || o.originLead.toLowerCase() === "whatssap").length;
-    const upsell = list.reduce((sum, o) => sum + o.upsell, 0);
-    return {
-      name, confirme, rappel, annule, livre, retour, expedierVers, whatssap, upsell, carousell: 0,
-      confRate: list.length ? ((confirme / list.length) * 100).toFixed(2) + "%" : "0%",
-      livrRate: livre + retour ? ((livre / (livre + retour)) * 100).toFixed(2) + "%" : "0%",
-      rateTotale: list.length ? ((livre / list.length) * 100).toFixed(2) + "%" : "0%",
-    };
-  }), [orders, agentNames]);
-
   const ch = useCallback((id: number, key: keyof Order, val: string) => {
     const nums: (keyof Order)[] = ["qte", "prix", "commission", "upsell"];
     upd(id, { [key]: nums.includes(key) ? Number(val) || 0 : val } as Partial<Order>);
@@ -388,7 +370,6 @@ export default function Sheet() {
 
   const th = (bg: string) => `border border-slate-400 ${bg} text-white px-1 py-1 text-[11px] font-bold text-center whitespace-nowrap`;
   const B = th("bg-[#4a86c8]"), G = th("bg-[#6aa84f]"), Y = `border border-slate-400 bg-[#f1c232] text-slate-800 px-1 py-1 text-[11px] font-bold text-center whitespace-nowrap`, R = th("bg-[#cc0000]"), D = th("bg-[#999]");
-  const c = "border border-slate-300 px-1 py-[2px] text-center";
 
   return (
     <div dir="ltr" className="flex h-full flex-col bg-white text-xs text-slate-800">
@@ -533,47 +514,6 @@ export default function Sheet() {
 
       <div className="flex-1 overflow-hidden">
        <DualScroll>
-        {/* ══ Agent Summary ══ */}
-        <table className="border-collapse text-xs">
-          <thead>
-            <tr>
-              <th className={D} style={{ width: 85 }}></th>
-              <th className={G}>Confirmé</th><th className={Y}>Rappel</th><th className={R}>Annulé</th>
-              <th className={B}>CONF RATE</th><th className={G}>livré</th><th className={R}>retour</th>
-              <th className={B}>Expédier vers</th><th className={G}>whatssap</th>
-              <th className={B}>LIVR RATE</th><th className={B}>Rate totale</th><th className={Y}>UPSELL</th><th className={D}>CAROUSELL</th>
-              <th className="w-2 border border-slate-200"></th>
-              <th className={B}>DATE TODAY</th><th className={D}></th>
-              <th className={G}>CMD livrée</th><th className={G}>CMD confirmé</th><th className={Y}>CMD rechengé</th>
-              <th className={R}>CMD Annulé</th><th className={R}>CMD retourner</th>
-              <th className={B}>chaifre d&apos;affaire</th><th className={B}>totale pieces sortie</th>
-            </tr>
-          </thead>
-          <tbody>
-            {agentRows.map((a, i) => (
-              <tr key={a.name} className={i % 2 ? "bg-[#f8f9fa]" : ""}>
-                <td className={`${c} font-bold text-left px-2`}>{a.name}</td>
-                <td className={`${c} bg-emerald-50`}>{a.confirme}</td>
-                <td className={`${c} bg-yellow-50`}>{a.rappel}</td>
-                <td className={`${c} bg-rose-50`}>{a.annule}</td>
-                <td className={`${c} font-bold text-emerald-700`}>{a.confRate}</td>
-                <td className={c}>{a.livre}</td><td className={c}>{a.retour}</td>
-                <td className={c}>{a.expedierVers}</td><td className={c}>{a.whatssap}</td>
-                <td className={`${c} font-bold text-sky-700`}>{a.livrRate}</td>
-                <td className={c}>{a.rateTotale}</td><td className={c}>{a.upsell}</td><td className={c}>{a.carousell}</td>
-                <td className="border border-slate-200"></td>
-                {i === 0 && <><td className={`${c} font-bold`}>{gs.dateToday}</td><td className={`${c} text-[10px]`}>FROM</td><td className={c}></td><td className={c}></td><td className={c}></td><td className={c}></td><td className={c}></td><td className={c}></td><td className={c}></td></>}
-                {i === 1 && <><td className={c}></td><td className={`${c} font-bold`}>{gs.from}</td><td className={`${c} font-bold text-emerald-700`}>{kpi.liv}</td><td className={`${c} font-bold`}>{kpi.conf}</td><td className={c}>{orders.filter((o) => o.livraison === "Expédier vers").length}</td><td className={`${c} text-rose-600 font-bold`}>{kpi.ann}</td><td className={c}>{kpi.ret}</td><td className={`${c} font-bold`}>{kpi.ca}</td><td className={c}>{kpi.pcs}</td></>}
-                {i === 2 && <><td className={c}></td><td className={`${c} text-[10px]`}>TO</td><td className={`${c} text-[10px]`}>Tx livraison</td><td className={`${c} text-[10px]`}>Tx confirmation</td><td className={`${c} text-[10px]`}>charge livraison</td><td className={`${c} text-[10px]`}>Tx annulation</td><td className={`${c} text-[10px]`}>CMD</td><td className={c}></td><td className={c}></td></>}
-                {i === 3 && <><td className={c}></td><td className={`${c} font-bold`}>{gs.to}</td><td className={`${c} font-bold`}>{kpi.livRate}</td><td className={`${c} font-bold`}>{kpi.confRate}</td><td className={`${c} font-bold`}>{gs.chargeLivraison}</td><td className={c}>{kpi.cmd ? ((kpi.ann / kpi.cmd) * 100).toFixed(2) + "%" : "0%"}</td><td className={`${c} font-bold`}>{kpi.cmd}</td><td className={c}></td><td className={c}></td></>}
-                {i >= 4 && Array.from({ length: 9 }).map((_, j) => <td key={j} className="border border-slate-200"></td>)}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        <div className="h-2"></div>
-
         {/* ══ Orders ══ */}
         <table className="w-full border-collapse text-xs">
           <thead className="z-20">

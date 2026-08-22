@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { cloudPush, registerRefresh } from "./cloud";
 
 /* ═══════════════════════ CHAT INTERNE ═══════════════════════
    💬 Chat Admin ⇄ Filles uniquement (jamais fille ⇄ fille)
@@ -36,7 +37,9 @@ function persist(list: ChatMsg[]) {
   cache = list;
   try { localStorage.setItem(KEY, JSON.stringify(list)); } catch { /* ignore */ }
   listeners.forEach((l) => l());
+  cloudPush(KEY);
 }
+registerRefresh(KEY, () => { cache = null; listeners.forEach((l) => l()); });
 
 function nextId(list: ChatMsg[]) {
   return list.reduce((m, x) => Math.max(m, x.id), 0) + 1;

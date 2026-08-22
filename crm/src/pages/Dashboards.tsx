@@ -1,5 +1,8 @@
+import { useState } from "react";
 import DualScroll from "../components/DualScroll";
+import { OrdersDetail } from "./TotalLivraison";
 import { useStore } from "../store";
+import { useAuth } from "../auth";
 import { usePeriod } from "../period";
 import type { Order } from "../data/orders";
 
@@ -8,9 +11,56 @@ const pct = (a: number, b: number) => (b > 0 ? ((a / b) * 100).toFixed(2) + "%" 
 
 /* ══════════════════ suivi confirmation (CALCULÉ depuis les commandes) ══════════════════ */
 export function SuiviConfirmationView() {
-  const { orders: allOrders, agentNames } = useStore();
+  const { orders: allOrders, agentNames, add, del, addAgent, removeAgent } = useStore();
+  const { users, updateUser } = useAuth();
   const { inRange, label } = usePeriod();
   const orders = allOrders.filter((o: Order) => inRange(o.dateCreation));
+  const [openAgent, setOpenAgent] = useState<string | null>(null);
+
+  /* 🛡️ صلاحيات المسح والإضافة (الأدمين) */
+  const delAgentFull = (name: string) => {
+    if (!confirm(`مسح البنت "${name}" وصفحتها؟\nالطلبيات ديالها غادي تبقى محفوظة فـ COMONDES بلا وكيلة.`)) return;
+    users.filter((u) => u.role === "user" && u.agent === name).forEach((u) => updateUser(u.id, { agent: "" }));
+    removeAgent(name);
+  };
+  const addGirlRow = () => {
+    const n = prompt("اسم البنت الجديدة:");
+    if (!n || !n.trim()) return;
+    if (!addAgent(n.trim())) alert("الاسم موجود بالفعل أو غير صالح");
+  };
+  const delProductAll = (prod: string) => {
+    const list = allOrders.filter((o: Order) => o.produit === prod);
+    if (!confirm(`مسح المنتوج "${prod}" وجميع طلبياته (${list.length} طلبية)؟\n⚠️ ما كاين رجوع!`)) return;
+    list.forEach((o) => del(o.id));
+  };
+  const addProductRow = () => {
+    const p = prompt("اسم المنتوج الجديد:");
+    if (!p || !p.trim()) return;
+    const a = prompt("شمن بنت نربطو معاهو؟", agentNames[0] || "");
+    if (!a || !a.trim()) return;
+    const today = new Date().toISOString().slice(0, 10);
+    add({
+      dateCreation: today, dateConfirmation: today, statut: "Confirmé", remarques: "", idCmd: "1",
+      nom: "", telephone: "", ville: "", adresse: "", qte: 1, prix: 0, produit: p.trim(), livraison: "",
+      upsell: 0, carousell: "", agent: a.trim(), link: "", carosellFlag: "", originLead: "", commission: 35, fees: "",
+    });
+  };
+
+  /* 🛡️ الأدمين: كليك على بنت → تعديل ومسح طلبياتها كاملين */
+  if (openAgent) {
+    const list = orders.filter((o: Order) => o.agent === openAgent);
+    return (
+      <div className="h-full">
+        <OrdersDetail
+          title={`suivi confirmation — ${openAgent}`}
+          color="#059669"
+          list={list}
+          readOnly={false}
+          onBack={() => setOpenAgent(null)}
+        />
+      </div>
+    );
+  }
 
   const H = ({ children, bg = "#6aa84f", w = 80, color = "#fff" }: { children: React.ReactNode; bg?: string; w?: number; color?: string }) =>
     <td className={box + " font-bold"} style={{ background: bg, color, minWidth: w }}>{children}</td>;
@@ -59,12 +109,17 @@ export function SuiviConfirmationView() {
         <div className="p-3 space-y-5" style={{ minWidth: 1200 }}>
           <div className="rounded bg-emerald-50 p-2 text-xs text-slate-600">
             ⚙️ هاد الصفحة كتتحسب أوتوماتيك من الطلبيات (COMONDES) — كل ما بدّلتي حالة طلبية كتتحدث المعدلات هنا مباشرة.
+<span className="mr-2 rounded bg-emerald-200 px-2 py-0.5 font-bold text-emerald-900">🛡️ اضغط على اسم أي بنت ⚡ باش تعدل وتمسح طلبياتها</span>
             <span className="mr-2 rounded bg-orange-100 px-2 py-0.5 font-bold text-orange-700">⏱ {label}</span>
           </div>
 
           {/* Résumé par agent */}
           <div>
-            <h3 className="mb-1 text-sm font-bold">👤 Résumé par confirmatrice (calculé)</h3>
+            <h3 className="mb-1 flex flex-wrap items-center gap-2 text-sm font-bold">
+              👤 Résumé par confirmatrice (calculé)
+              <button onClick={addGirlRow} className="rounded-lg bg-emerald-600 px-2.5 py-1 text-[10px] font-bold text-white transition hover:bg-emerald-700 active:scale-[0.97]">＋ بنت</button>
+              <button onClick={addProductRow} className="rounded-lg bg-blue-600 px-2.5 py-1 text-[10px] font-bold text-white transition hover:bg-blue-700 active:scale-[0.97]">＋ منتوج</button>
+            </h3>
             <table className="border-collapse">
               <thead>
                 <tr>
@@ -82,12 +137,14 @@ export function SuiviConfirmationView() {
                   <H bg="#3c78d8" w={90}>Rate totale</H>
                   <H bg="#f1c232" w={70} color="#000">UPSELL</H>
                   <H bg="#38761d" w={110}>C.A (livré)</H>
+                  <H bg="#434343" w={50}>🗑️</H>
                 </tr>
               </thead>
               <tbody>
                 {agentStats.map((s) => (
                   <tr key={s.a}>
-                    <H bg="#93c47d" w={90} color="#000">{s.a}</H>
+                    <td className={box + " cursor-pointer font-bold underline decoration-dotted transition hover:brightness-95"} style={{ background: "#93c47d", color: "#000", minWidth: 90 }}
+                      onClick={() => setOpenAgent(s.a)} title="🛡️ إدارة طلبيات هذه البنت (تعديل + مسح)">{s.a} ⚡</td>
                     <V w={70}>{s.total}</V>
                     <V w={80} bg="#d9ead3">{s.conf}</V>
                     <V w={70} bg="#fff2cc">{s.rappel}</V>
@@ -101,6 +158,10 @@ export function SuiviConfirmationView() {
                     <V w={90} bg="#cfe2f3">{s.totalRate}</V>
                     <V w={70}>{s.upsell}</V>
                     <V w={110}><b>{s.ca.toLocaleString("fr-FR")} DH</b></V>
+                    <td className={box}>
+                      <button onClick={() => delAgentFull(s.a)} title={`مسح ${s.a} وصفحتها`}
+                        className="px-1 text-red-600 transition hover:text-red-800 hover:scale-125">🗑️</button>
+                    </td>
                   </tr>
                 ))}
                 {!agentStats.length && <tr><td colSpan={14} className={box}>لا توجد بيانات</td></tr>}
@@ -110,10 +171,13 @@ export function SuiviConfirmationView() {
 
           {/* CONFIRMATION produit × agent */}
           <div>
-            <h3 className="mb-1 text-sm font-bold">✅ CONFIRMATION — Produit × Agent (nombre confirmé)</h3>
+            <h3 className="mb-1 flex flex-wrap items-center gap-2 text-sm font-bold">
+              ✅ CONFIRMATION — Produit × Agent (nombre confirmé)
+              <button onClick={addProductRow} className="rounded-lg bg-blue-600 px-2.5 py-1 text-[10px] font-bold text-white transition hover:bg-blue-700 active:scale-[0.97]">＋ منتوج</button>
+            </h3>
             <table className="border-collapse">
               <thead>
-                <tr><H bg="#38761d" w={240}>Produit</H>{agents.map((a) => <H key={a} bg="#6aa84f" w={80}>{a}</H>)}<H bg="#434343" w={70}>TOTAL</H></tr>
+                <tr><H bg="#38761d" w={240}>Produit</H>{agents.map((a) => <H key={a} bg="#6aa84f" w={80}>{a}</H>)}<H bg="#434343" w={70}>TOTAL</H><H bg="#434343" w={50}>🗑️</H></tr>
               </thead>
               <tbody>
                 {confMatrix.map((r) => {
@@ -123,6 +187,10 @@ export function SuiviConfirmationView() {
                       <V w={240} bg="#f3f3f3">{r.p}</V>
                       {r.vals.map((v, i) => <V key={i} w={80}>{v || ""}</V>)}
                       <V w={70} bg="#d9ead3"><b>{tot}</b></V>
+                      <td className={box}>
+                        <button onClick={() => delProductAll(r.p)} title={`مسح ${r.p} وجميع طلبياته`}
+                          className="px-1 text-red-600 transition hover:text-red-800 hover:scale-125">🗑️</button>
+                      </td>
                     </tr>
                   );
                 })}
@@ -135,7 +203,7 @@ export function SuiviConfirmationView() {
             <h3 className="mb-1 text-sm font-bold">📊 Delivre rate — Produit × Agent (livré / livré+retour)</h3>
             <table className="border-collapse">
               <thead>
-                <tr><H bg="#38761d" w={240}>Produit</H>{agents.map((a) => <H key={a} bg="#6aa84f" w={90}>{a}</H>)}</tr>
+                <tr><H bg="#38761d" w={240}>Produit</H>{agents.map((a) => <H key={a} bg="#6aa84f" w={90}>{a}</H>)}<H bg="#434343" w={50}>🗑️</H></tr>
               </thead>
               <tbody>
                 {rateMatrix.map((r) => (
@@ -146,6 +214,10 @@ export function SuiviConfirmationView() {
                       const bg = v.rate >= 55 ? "#b6d7a8" : v.rate >= 40 ? "#ffe599" : "#ea9999";
                       return <V key={i} w={90} bg={bg}>{v.rate.toFixed(2)}%</V>;
                     })}
+                    <td className={box}>
+                      <button onClick={() => delProductAll(r.p)} title={`مسح ${r.p} وجميع طلبياته`}
+                        className="px-1 text-red-600 transition hover:text-red-800 hover:scale-125">🗑️</button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

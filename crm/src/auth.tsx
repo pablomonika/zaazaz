@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { startSession, closeSession, cleanupStaleSessions } from "./data/worktimes";
+import { cloudPush } from "./data/cloud";
 
 export type AppUser = {
   id: number;
@@ -47,7 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return saved ? Number(saved) : null;
   });
 
-  useEffect(() => localStorage.setItem(USERS_KEY, JSON.stringify(users)), [users]);
+  useEffect(() => { localStorage.setItem(USERS_KEY, JSON.stringify(users)); cloudPush(USERS_KEY); }, [users]);
   useEffect(() => {
     if (sessionId === null) localStorage.removeItem(SESSION_KEY);
     else localStorage.setItem(SESSION_KEY, String(sessionId));

@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { cloudPush, registerRefresh } from "./cloud";
 
 /* ═══════════════════════════════════════════════════════════════
    WORK TIMES — suivi RÉEL des sessions dans le CRM
@@ -39,6 +40,7 @@ function persist(list: Session[]) {
   cache = list;
   try { localStorage.setItem(KEY, JSON.stringify(list)); } catch { /* ignore */ }
   emit();
+  cloudPush(KEY);
 }
 
 function nextId(list: Session[]) {
@@ -125,3 +127,5 @@ export function useSessions(): Session[] {
 export function getSessions(): Session[] {
   return (cache ??= load());
 }
+
+registerRefresh(KEY, () => { cache = null; listeners.forEach((l) => l()); });
