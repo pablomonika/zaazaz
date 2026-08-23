@@ -60,25 +60,43 @@ export async function initCloudSync(): Promise<void> {
   }
 }
 
-/* PUSH: أي تغيير محلي */
-const timers = new Map<string, ReturnType<typeof setTimeout>>();
+/* PUSH: أي تغيير محلي — فوري + إعادة محاولة */
+let pushing = new Set<string>();
 export function cloudPush(key: string) {
   if (!enabled || !SHARED_KEYS.includes(key)) return;
-  clearTimeout(timers.get(key));
-  timers.set(key, setTimeout(() => {
+  // إلا كاين إرسال جاري لنفس المفتاح، سجلو وغايتصيفط من بعد
+  if (pushing.has(key)) {
+    setTimeout(() => cloudPush(key), 1200);
+    return;
+  }
+  pushing.add(key);
+  const doPush = () => {
     try {
       const raw = localStorage.getItem(key);
-      if (raw === null) return;
+      if (raw === null) { pushing.delete(key); return; }
       const t = Date.now();
       localStorage.setItem(ctKey(key), String(t));
       fetch("api.php", {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Sync-Token": SECRET },
         body: JSON.stringify({ key, t, d: JSON.parse(raw) }),
-        keepalive: true,
-      }).catch(() => { /* أوفلاين */ });
-    } catch { /* ignore */ }
-  }, 800));
+      }).then((r) => {
+        pushing.delete(key);
+        if (!r.ok) {
+          // إعادة محاولة بعد 2 ثواني
+          setTimeout(() => cloudPush(key), 2000);
+        }
+      }).catch(() => {
+        pushing.delete(key);
+        // إعادة محاولة بعد 2 ثواني
+        setTimeout(() => cloudPush(key), 2000);
+      });
+    } catch {
+      pushing.delete(key);
+    }
+  };
+  // تأخير صغير 200ms باش نجمعو تغييرات سريعة
+  setTimeout(doPush, 200);
 }
 
 /* POLL: كل 12 ثانية — حدّث الواجهة الحية (شات، أوقات، ملاحظات...) */
