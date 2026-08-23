@@ -1,5 +1,5 @@
 <?php
-/* Paraveda CRM Sync API — Simplified & Bulletproof */
+/* Paraveda CRM Sync — Guaranteed working */
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-cache, no-store, must-revalidate');
 header('Access-Control-Allow-Origin: *');
@@ -18,62 +18,56 @@ $KEYS = array(
   "sheet_pièce","afrizon_team_photos_v1","tabs_list_v1","custom_sheets_v1",
 );
 
-function load_all($f) {
-  if (!file_exists($f)) { @file_put_contents($f, '{}'); return array(); }
-  $s = @file_get_contents($f);
-  if ($s === false || $s === '') return array();
-  $d = json_decode($s, true);
-  return is_array($d) ? $d : array();
-}
+$m = $_SERVER['REQUEST_METHOD'];
 
-function save_all($f, $d) {
-  return @file_put_contents($f, json_encode($d, JSON_UNESCAPED_UNICODE), LOCK_EX) !== false;
-}
-
-$method = $_SERVER['REQUEST_METHOD'];
-
-if ($method === 'GET') {
-  $all = load_all($FILE);
-  if (empty($all)) {
+if ($m === 'GET') {
+  if (!file_exists($FILE)) {
     echo '{}';
-  } else {
-    echo json_encode($all, JSON_UNESCAPED_UNICODE);
+    exit;
   }
+  $s = file_get_contents($FILE);
+  if ($s === false || $s === '' || trim($s) === '[]') {
+    echo '{}';
+    exit;
+  }
+  echo $s;
   exit;
 }
 
-if ($method === 'POST') {
-  $token = isset($_SERVER['HTTP_X_SYNC_TOKEN']) ? $_SERVER['HTTP_X_SYNC_TOKEN'] : '';
-  if ($token !== $SECRET) {
-    http_response_code(403);
-    echo '{"ok":false}';
-    exit;
-  }
+if ($m === 'POST') {
+  $tok = isset($_SERVER['HTTP_X_SYNC_TOKEN']) ? $_SERVER['HTTP_X_SYNC_TOKEN'] : '';
+  if ($tok !== $SECRET) { http_response_code(403); echo '{"ok":false}'; exit; }
+
   $raw = file_get_contents('php://input');
-  $body = json_decode($raw, true);
-  if (!isset($body['key']) || !isset($body['t']) || !isset($body['d'])) {
-    http_response_code(400);
-    echo '{"ok":false}';
-    exit;
+  $b = json_decode($raw, true);
+  if (!$b || !isset($b['key']) || !isset($b['t']) || !isset($b['d'])) {
+    http_response_code(400); echo '{"ok":false}'; exit;
   }
-  if (!in_array($body['key'], $KEYS, true)) {
-    http_response_code(403);
-    echo '{"ok":false}';
-    exit;
+  if (!in_array($b['key'], $KEYS, true)) {
+    http_response_code(403); echo '{"ok":false}'; exit;
   }
-  $all = load_all($FILE);
-  $cur = isset($all[$body['key']]) ? $all[$body['key']] : null;
-  if ($cur === null || intval($body['t']) >= intval($cur['t'])) {
-    $all[$body['key']] = array('t' => intval($body['t']), 'd' => $body['d']);
-    if (save_all($FILE, $all)) {
-      echo '{"ok":true}';
-    } else {
-      http_response_code(500);
-      echo '{"ok":false,"err":"cannot_write"}';
+
+  $cur = '{}';
+  if (file_exists($FILE)) {
+    $cur = file_get_contents($FILE);
+    if ($cur === false || trim($cur) === '') $cur = '{}';
+  }
+  $d = json_decode($cur, true);
+  if (!is_array($d)) $d = array();
+
+  $k = $b['key'];
+  $t = intval($b['t']);
+  $old = isset($d[$k]) ? $d[$k] : null;
+
+  if ($old === null || $t >= intval($old['t'])) {
+    $d[$k] = array('t' => $t, 'd' => $b['d']);
+    $json = json_encode($d, JSON_UNESCAPED_UNICODE);
+    if ($json === false) { http_response_code(500); echo '{"ok":false}'; exit; }
+    if (file_put_contents($FILE, $json, LOCK_EX) === false) {
+      http_response_code(500); echo '{"ok":false,"err":"write"}'; exit;
     }
-  } else {
-    echo '{"ok":true}';
   }
+  echo '{"ok":true}';
   exit;
 }
 
