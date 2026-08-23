@@ -5,11 +5,10 @@ import App from "./App";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { initCloudSync } from "./data/cloud";
 
-/* ⏳ ستنى المزامنة السحابية (2.5s max) من غير ما يبان التطبيق — باش كل جهاز يشد آخر داتا */
-Promise.race([
-  initCloudSync(),
-  new Promise((r) => setTimeout(r, 2500)),
-] as Promise<unknown>[]).then(() => {
+/* ⏳ استنى المزامنة السحابية تكمّل قبل ما يبان التطبيق
+   (باش اليوزرات من السيرفر يكونو موجودين قبل الـ Login)
+   إلا فشلت → التطبيق كيخدم محلي عادي */
+initCloudSync().finally(() => {
   createRoot(document.getElementById("root")!).render(
     <StrictMode>
       <ErrorBoundary>

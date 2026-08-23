@@ -50,13 +50,21 @@ export async function initCloudSync(): Promise<void> {
   try {
     const r = await fetch("api.php", { cache: "no-store", headers: { "X-Sync-Token": SECRET } });
     if (!r.ok) throw new Error("http " + r.status);
-    const data = (await r.json()) as Record<string, Entry>;
+    const txt = await r.text();
+    let data: Record<string, Entry>;
+    try {
+      data = JSON.parse(txt) as Record<string, Entry>;
+    } catch {
+      throw new Error("parse: " + txt.slice(0, 50));
+    }
     if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("shape");
-    applyServer(data);
+    const changed = applyServer(data);
     enabled = true;
     startPolling();
-  } catch {
-    enabled = false; // ما كاينش api.php → وضع محلي عادي
+    console.log("[cloud] sync enabled, keys changed:", changed.length);
+  } catch (e) {
+    enabled = false;
+    console.log("[cloud] sync disabled:", e instanceof Error ? e.message : e);
   }
 }
 
