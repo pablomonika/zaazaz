@@ -26,10 +26,10 @@
   bleed: 3mm;                    /* مسافة القص على الأطراف */
   margin: 18mm 15mm 18mm 18mm;   /* أعلى / يمين / أسفل / يسار */
 
-  /* الترويسة: اسم الباب أو الفصل الحالي */
+  /* الترويسة أعلى الصفحة: اسم الكتاب وموقعه الرسمي، بأسلوب الكتاب الأصلي */
   @top-center {
-    content: string(section);
-    font-family: "Noto Naskh Arabic", "Amiri", serif;
+    content: "altayebaat.com ❋ نظام الطيبات ❋";
+    font-family: "Amiri", "Noto Naskh Arabic", serif;
     font-size: 8pt;
     color: var(--gold);
     letter-spacing: 0.2pt;
@@ -46,24 +46,24 @@
   }
 }
 
-/* الصفحات الفردية: هامش التجليد على اليمين، ورقم الصفحة يمينًا */
+/* الصفحات الفردية: هامش التجليد على اليمين، والتذييل يمينًا */
 @page :right {
   margin: 18mm 18mm 18mm 15mm;   /* الهامش الأيمن (التجليد) 18مم */
   @bottom-right {
-    content: counter(page);
+    content: "❋ صفحة " counter(page) " ❋";
     font-family: "Amiri", "Noto Naskh Arabic", serif;
-    font-size: 9.5pt;
+    font-size: 9pt;
     color: var(--green);
   }
 }
 
-/* الصفحات الزوجية: هامش التجليد على اليسار، ورقم الصفحة يسارًا */
+/* الصفحات الزوجية: هامش التجليد على اليسار، والتذييل يسارًا */
 @page :left {
   margin: 18mm 15mm 18mm 18mm;   /* الهامش الأيسر (التجليد) 18مم */
   @bottom-left {
-    content: counter(page);
+    content: "❋ صفحة " counter(page) " ❋";
     font-family: "Amiri", "Noto Naskh Arabic", serif;
-    font-size: 9.5pt;
+    font-size: 9pt;
     color: var(--green);
   }
 }
@@ -133,6 +133,22 @@ h3 {
   color: var(--green-soft);
   margin: 5mm 0 2.5mm 0;
   font-weight: 700;
+}
+
+/* الآية القرآنية الافتتاحية */
+.verse {
+  font-family: "Amiri", "Noto Naskh Arabic", serif;
+  font-size: 15pt;
+  text-align: center;
+  color: var(--green);
+  margin: 3mm 0 0 0;
+}
+
+.verse-ref {
+  text-align: center;
+  font-size: 9.5pt;
+  color: var(--gold);
+  margin: 0.5mm 0 5mm 0;
 }
 
 /* ترقيم الفصل (شارة صغيرة فوق العنوان) */
@@ -321,6 +337,25 @@ td {
 
 tbody tr:nth-child(even) td { background: var(--table-alt); }
 
+/* قوائم النظريات والمصادر */
+.theories-list,
+.sources-list {
+  list-style: arabic-indic;
+  padding-inline-start: 8mm;
+}
+
+.theories-list {
+  columns: 2;
+  column-gap: 8mm;
+  font-size: 10pt;
+}
+
+.theories-list li,
+.sources-list li {
+  margin-bottom: 1.8mm;
+  break-inside: avoid;
+}
+
 /* ------------------------------- فهرس المحتويات ----------------------------- */
 
 .toc {
@@ -461,6 +496,37 @@ tbody tr:nth-child(even) td { background: var(--table-alt); }
   color: var(--muted);
   line-height: 1.9;
 }
+
+/* صفحة الإهداء */
+.dedication {
+  justify-content: center;
+  gap: 10mm;
+}
+
+.dedication .basmala {
+  font-family: "Amiri", serif;
+  font-size: 13pt;
+  color: var(--green);
+  letter-spacing: 1pt;
+}
+
+.dedication-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6mm;
+}
+
+.dedication-text {
+  font-family: "Amiri", "Noto Naskh Arabic", serif;
+  font-size: 15pt;
+  line-height: 2.2;
+  color: var(--text);
+  text-align: center;
+  margin: 0;
+}
+
+.dedication-text strong { color: var(--green); }
 
 /* صفحة حقوق النشر */
 .copyright {
