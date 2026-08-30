@@ -562,15 +562,31 @@ tbody tr:nth-child(even) td { background: var(--table-alt); }
 
 /* ------------------------------- معاينة الشاشة ------------------------------ */
 
+/* الوضع الافتراضي: قراءة عادية مريحة على خلفية فاتحة — يعمل بدون أي JavaScript أو إنترنت */
 @media screen {
   body {
-    background: #4E4E4E;
+    background: #F4F1E6;
   }
-  .pagedjs_page {
-    background: #FFFFFF;
-    box-shadow: 0 0 14px rgba(0,0,0,0.45);
-    margin: 0 auto 22px auto;
+  .cover, .copyright {
+    min-height: 0;
+    height: auto;
+    padding: 12mm 10mm;
   }
+}
+
+/* عند تفعيل محرك تنسيق الصفحات (Paged.js) تتحول الشاشة إلى معرض صفحات A5 */
+body.paged-active {
+  background: #4E4E4E;
+}
+body.paged-active .pagedjs_page {
+  background: #FFFFFF;
+  box-shadow: 0 0 14px rgba(0,0,0,0.45);
+  margin: 0 auto 22px auto;
+}
+body.paged-active .cover,
+body.paged-active .copyright {
+  min-height: 210mm;
+  padding: 14mm 11mm;
 }
 
 /* ---------------------- شريط أدوات الشاشة (زر الحفظ/الطباعة) ---------------------- */

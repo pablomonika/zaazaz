@@ -4,10 +4,633 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>نظام الطيبات — دليل شامل لفهم منهج الطيبات والتغذية المتوازنة</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/book.css">
+<style>
+/* ==========================================================================
+   نظام الطيبات — دليل شامل لفهم منهج الطيبات والتغذية المتوازنة
+   تصميم الكتاب للطباعة الورقية — مقاس A5 (148mm × 210mm)
+   هوية الكتاب:
+     الأخضر الزمردي الداكن  #1E4620
+     الذهبي الدافئ          #C5A059
+     لون النص الأساسي       #222222
+   ========================================================================== */
+
+:root {
+  --green:       #1E4620;
+  --green-soft:  #2C5A2E;
+  --gold:        #C5A059;
+  --gold-light:  #D9BD85;
+  --gold-pale:   #F8F3E7;
+  --text:        #222222;
+  --muted:       #6B6B6B;
+  --line:        #E2DBC9;
+  --table-alt:   #F5F2E9;
+}
+
+/* ----------------------------- إعداد الصفحات ----------------------------- */
+
+@page {
+  size: 148mm 210mm;             /* مقاس A5 */
+  bleed: 3mm;                    /* مسافة القص على الأطراف */
+  margin: 18mm 15mm 18mm 18mm;   /* أعلى / يمين / أسفل / يسار */
+
+  /* الترويسة أعلى الصفحة: اسم الكتاب وموقعه الرسمي، بأسلوب الكتاب الأصلي */
+  @top-center {
+    content: "altayebaat.com ❋ نظام الطيبات ❋";
+    font-family: "Amiri", "Noto Naskh Arabic", serif;
+    font-size: 8pt;
+    color: var(--gold);
+    letter-spacing: 0.2pt;
+    border-bottom: 0.4pt solid var(--gold-light);
+    padding-bottom: 2.2mm;
+    margin-bottom: 1.5mm;
+    vertical-align: bottom;
+  }
+
+  /* خط ذهبي رفيع أعلى التذييل */
+  @bottom-left, @bottom-right, @bottom-center {
+    border-top: 0.4pt solid var(--gold-light);
+    padding-top: 2.2mm;
+  }
+}
+
+/* الصفحات الفردية: هامش التجليد على اليمين، والتذييل يمينًا */
+@page :right {
+  margin: 18mm 18mm 18mm 15mm;   /* الهامش الأيمن (التجليد) 18مم */
+  @bottom-right {
+    content: "❋ صفحة " counter(page) " ❋";
+    font-family: "Amiri", "Noto Naskh Arabic", serif;
+    font-size: 9pt;
+    color: var(--green);
+  }
+}
+
+/* الصفحات الزوجية: هامش التجليد على اليسار، والتذييل يسارًا */
+@page :left {
+  margin: 18mm 15mm 18mm 18mm;   /* الهامش الأيسر (التجليد) 18مم */
+  @bottom-left {
+    content: "❋ صفحة " counter(page) " ❋";
+    font-family: "Amiri", "Noto Naskh Arabic", serif;
+    font-size: 9pt;
+    color: var(--green);
+  }
+}
+
+/* صفحة الغلاف الداخلي وصفحة الحقوق: بدون ترويسة أو ترقيم */
+@page cover {
+  margin: 0;
+  @top-center    { content: none; border: none; }
+  @bottom-left   { content: none; border: none; }
+  @bottom-right  { content: none; border: none; }
+  @bottom-center { content: none; border: none; }
+}
+
+/* ------------------------------- القاعدة العامة ---------------------------- */
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Noto Naskh Arabic", "Amiri", "Geeza Pro", serif;
+  font-size: 11pt;
+  line-height: 1.95;
+  color: var(--text);
+  text-align: justify;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+p {
+  margin: 0 0 2.6mm 0;
+  orphans: 2;
+  widows: 2;
+}
+
+strong { color: var(--green-soft); font-weight: 700; }
+
+a { color: var(--green); }
+
+/* --------------------------------- العناوين -------------------------------- */
+
+h1, h2, h3 {
+  font-family: "Amiri", "Noto Naskh Arabic", serif;
+  color: var(--green);
+  text-align: right;
+  line-height: 1.4;
+  string-set: section content();
+}
+
+h1 {
+  font-size: 21pt;
+  margin: 0 0 5mm 0;
+  font-weight: 700;
+}
+
+h2 {
+  font-size: 15.5pt;
+  margin: 0 0 4mm 0;
+  font-weight: 700;
+  border-inline-start: 3pt solid var(--gold);
+  padding-inline-start: 4mm;
+}
+
+h3 {
+  font-size: 12.5pt;
+  color: var(--green-soft);
+  margin: 5mm 0 2.5mm 0;
+  font-weight: 700;
+}
+
+/* الآية القرآنية الافتتاحية */
+.verse {
+  font-family: "Amiri", "Noto Naskh Arabic", serif;
+  font-size: 15pt;
+  text-align: center;
+  color: var(--green);
+  margin: 3mm 0 0 0;
+}
+
+.verse-ref {
+  text-align: center;
+  font-size: 9.5pt;
+  color: var(--gold);
+  margin: 0.5mm 0 5mm 0;
+}
+
+/* ترقيم الفصل (شارة صغيرة فوق العنوان) */
+.chapter-kicker,
+.part-kicker {
+  font-family: "Amiri", serif;
+  font-size: 10.5pt;
+  color: var(--gold);
+  letter-spacing: 0.6pt;
+  margin-bottom: 1.5mm;
+}
+
+/* ------------------------------- فاتح الباب -------------------------------- */
+
+.part {
+  break-before: right;
+  text-align: center;
+  padding-top: 8mm;
+}
+
+.part .part-kicker {
+  font-size: 13pt;
+  letter-spacing: 1.2pt;
+}
+
+.part h1 {
+  font-size: 26pt;
+  text-align: center;
+  margin: 3mm 0 4mm 0;
+}
+
+.part .ornament {
+  margin: 0 0 6mm 0;
+}
+
+.part .part-lead {
+  text-align: justify;
+  color: var(--muted);
+  font-size: 10.5pt;
+  line-height: 2;
+  margin-top: 6mm;
+}
+
+.part-intro-heading {
+  text-align: right;
+  margin-top: 8mm;
+}
+
+/* ---------------------------------- الفصول --------------------------------- */
+
+.chapter {
+  break-before: page;
+}
+
+/* -------------------------------- الزخارف ---------------------------------- */
+
+.ornament {
+  text-align: center;
+  color: var(--gold);
+  font-size: 11pt;
+  letter-spacing: 3mm;
+  margin: 4mm 0;
+  break-inside: avoid;
+}
+
+/* فاصل ناعم بين أجزاء النص */
+.section-divider {
+  border: none;
+  border-top: 0.4pt solid var(--line);
+  margin: 6mm 20%;
+}
+
+/* ----------------------------- صناديق الملاحظات ---------------------------- */
+
+.note,
+.quote,
+.summary,
+.warning {
+  break-inside: avoid;
+  margin: 4.5mm 0;
+  padding: 4mm 5mm;
+  font-size: 10pt;
+  line-height: 1.85;
+  text-align: justify;
+}
+
+.note {
+  background: var(--gold-pale);
+  border: 0.6pt solid var(--gold);
+  border-inline-start: 3pt solid var(--gold);
+}
+
+.quote {
+  background: #FBF8EF;
+  border-inline-start: 3pt solid var(--gold);
+  font-family: "Amiri", "Noto Naskh Arabic", serif;
+  font-size: 11pt;
+}
+
+.quote .source {
+  display: block;
+  margin-top: 2.5mm;
+  color: var(--muted);
+  font-size: 9pt;
+  font-family: "Noto Naskh Arabic", serif;
+}
+
+.summary {
+  background: #EEF3EC;
+  border: 0.6pt solid var(--green);
+  border-inline-start: 3pt solid var(--green);
+}
+
+.warning {
+  background: #FBF3E7;
+  border: 0.6pt solid var(--gold-light);
+  border-inline-start: 3pt solid #B9822F;
+}
+
+.box-title {
+  display: block;
+  font-family: "Amiri", serif;
+  font-weight: 700;
+  color: var(--green);
+  margin-bottom: 2mm;
+  font-size: 10.5pt;
+}
+
+.warning .box-title { color: #8A5A16; }
+
+/* ------------------------------- القوائم والملخص ---------------------------- */
+
+ul, ol {
+  margin: 2.5mm 0 3.5mm 0;
+  padding-inline-start: 7mm;
+}
+
+li { margin-bottom: 1.6mm; }
+
+ul.check { list-style: none; padding-inline-start: 2mm; }
+ul.check li { padding-inline-start: 6mm; position: relative; }
+ul.check li::before {
+  content: "✓";
+  color: var(--gold);
+  position: absolute;
+  inset-inline-start: 0;
+  font-weight: 700;
+}
+
+/* ------------------------------- الجداول ------------------------------------ */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 4mm 0 5mm 0;
+  font-size: 9.5pt;
+  line-height: 1.7;
+  break-inside: avoid;
+  text-align: right;
+}
+
+caption {
+  caption-side: top;
+  font-family: "Amiri", serif;
+  font-weight: 700;
+  color: var(--green);
+  font-size: 10.5pt;
+  padding-bottom: 2mm;
+}
+
+th {
+  background: var(--green);
+  color: #FFFFFF;
+  font-family: "Amiri", serif;
+  font-weight: 700;
+  font-size: 10pt;
+  padding: 2.6mm 2.5mm;
+  text-align: center;
+}
+
+td {
+  border: 0.5pt solid #D8D2C0;
+  padding: 2.2mm 2.5mm;
+  vertical-align: top;
+}
+
+tbody tr:nth-child(even) td { background: var(--table-alt); }
+
+/* قوائم النظريات والمصادر */
+.theories-list,
+.sources-list {
+  list-style: arabic-indic;
+  padding-inline-start: 8mm;
+}
+
+.theories-list {
+  columns: 2;
+  column-gap: 8mm;
+  font-size: 10pt;
+}
+
+.theories-list li,
+.sources-list li {
+  margin-bottom: 1.8mm;
+  break-inside: avoid;
+}
+
+/* ------------------------------- فهرس المحتويات ----------------------------- */
+
+.toc {
+  break-before: page;
+}
+
+.toc h1 { margin-bottom: 6mm; }
+
+.toc .toc-note {
+  color: var(--muted);
+  font-size: 9pt;
+  margin-bottom: 5mm;
+}
+
+.toc ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.toc li { margin-bottom: 2.4mm; }
+
+.toc a {
+  display: block;
+  text-decoration: none;
+  color: var(--text);
+  line-height: 1.8;
+}
+
+.toc a::after {
+  content: leader(". ") target-counter(attr(href), page);
+  color: var(--gold);
+  font-size: 9.5pt;
+}
+
+.toc .toc-part a {
+  font-family: "Amiri", serif;
+  font-weight: 700;
+  color: var(--green);
+  font-size: 12pt;
+  margin-top: 4mm;
+}
+
+.toc .toc-chapter a {
+  font-size: 10pt;
+  padding-inline-start: 7mm;
+}
+
+.toc .toc-sub a {
+  font-size: 9.5pt;
+  color: var(--muted);
+  padding-inline-start: 14mm;
+}
+
+/* ------------------------------ خريطة الكتاب -------------------------------- */
+
+.bookmap {
+  break-before: page;
+}
+
+.bookmap ol { list-style: none; padding: 0; }
+.bookmap > ol > li { margin-bottom: 4mm; }
+.bookmap .bm-part {
+  font-family: "Amiri", serif;
+  font-weight: 700;
+  color: var(--green);
+  font-size: 12pt;
+}
+.bookmap ul { list-style: none; padding-inline-start: 7mm; margin: 1.5mm 0; }
+.bookmap ul li { color: var(--muted); font-size: 9.5pt; margin-bottom: 0.8mm; }
+.bookmap .tbd { color: #B0A888; }
+
+/* ------------------------------- الصفحات الأمامية ---------------------------- */
+
+.front {
+  break-before: page;
+}
+
+.front h1 { margin-bottom: 5mm; }
+
+.lead-para {
+  font-size: 11pt;
+  color: var(--green-soft);
+  font-weight: 600;
+  text-align: justify;
+}
+
+/* صفحة الغلاف الداخلي */
+.cover {
+  page: cover;
+  box-sizing: border-box;
+  min-height: 210mm;
+  padding: 14mm 11mm;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  text-align: center;
+  border: 1.1pt solid var(--gold);
+  outline: 0.5pt solid var(--gold);
+  outline-offset: -3.5mm;
+  break-after: page;
+}
+
+.cover .basmala {
+  font-family: "Amiri", serif;
+  font-size: 15pt;
+  color: var(--green);
+  margin: 0;
+}
+
+.cover .book-title {
+  font-family: "Amiri", serif;
+  font-size: 30pt;
+  font-weight: 700;
+  color: var(--green);
+  line-height: 1.5;
+  margin: 0;
+  text-align: center;
+}
+
+.cover .book-subtitle {
+  font-family: "Noto Naskh Arabic", serif;
+  font-size: 13.5pt;
+  color: var(--muted);
+  line-height: 1.9;
+  margin: 2mm 0 0 0;
+}
+
+.cover .cover-ornament {
+  color: var(--gold);
+  font-size: 14pt;
+  letter-spacing: 4mm;
+}
+
+.cover .cover-foot {
+  font-size: 10pt;
+  color: var(--muted);
+  line-height: 1.9;
+}
+
+/* صفحة الإهداء */
+.dedication {
+  justify-content: center;
+  gap: 10mm;
+}
+
+.dedication .basmala {
+  font-family: "Amiri", serif;
+  font-size: 13pt;
+  color: var(--green);
+  letter-spacing: 1pt;
+}
+
+.dedication-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6mm;
+}
+
+.dedication-text {
+  font-family: "Amiri", "Noto Naskh Arabic", serif;
+  font-size: 15pt;
+  line-height: 2.2;
+  color: var(--text);
+  text-align: center;
+  margin: 0;
+}
+
+.dedication-text strong { color: var(--green); }
+
+/* صفحة حقوق النشر */
+.copyright {
+  page: cover;
+  box-sizing: border-box;
+  min-height: 210mm;
+  padding: 30mm 14mm;
+  text-align: center;
+  color: var(--muted);
+  font-size: 9.5pt;
+  line-height: 2.1;
+  break-after: page;
+}
+
+.copyright .cp-title {
+  font-family: "Amiri", serif;
+  font-size: 14pt;
+  color: var(--green);
+  font-weight: 700;
+  margin-bottom: 6mm;
+}
+
+/* تنبيه القارئ */
+.notice-box {
+  margin-top: 6mm;
+  padding: 5mm 6mm;
+  background: #FBF3E7;
+  border: 0.8pt solid var(--gold);
+  break-inside: avoid;
+}
+
+.notice-box h3 { margin-top: 0; }
+
+/* ------------------------------- معاينة الشاشة ------------------------------ */
+
+/* الوضع الافتراضي: قراءة عادية مريحة على خلفية فاتحة — يعمل بدون أي JavaScript أو إنترنت */
+@media screen {
+  body {
+    background: #F4F1E6;
+  }
+  .cover, .copyright {
+    min-height: 0;
+    height: auto;
+    padding: 12mm 10mm;
+  }
+}
+
+/* عند تفعيل محرك تنسيق الصفحات (Paged.js) تتحول الشاشة إلى معرض صفحات A5 */
+body.paged-active {
+  background: #4E4E4E;
+}
+body.paged-active .pagedjs_page {
+  background: #FFFFFF;
+  box-shadow: 0 0 14px rgba(0,0,0,0.45);
+  margin: 0 auto 22px auto;
+}
+body.paged-active .cover,
+body.paged-active .copyright {
+  min-height: 210mm;
+  padding: 14mm 11mm;
+}
+
+/* ---------------------- شريط أدوات الشاشة (زر الحفظ/الطباعة) ---------------------- */
+
+.print-toolbar {
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 9999;
+  display: flex;
+  gap: 8px;
+}
+
+.print-toolbar button {
+  font-family: "Noto Naskh Arabic", "Amiri", serif;
+  font-size: 13px;
+  padding: 9px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: var(--green);
+  color: #FFFFFF;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.35);
+}
+
+.print-toolbar button:hover { background: var(--green-soft); }
+
+@media print {
+  .print-toolbar { display: none !important; }
+}
+
+/* ------------- احتياط: إذا تعذر تحميل Paged.js يبقى النص مقروءًا ------------ */
+@media screen and (max-width: 0px) {
+  /* لا شيء — وجود هذه القاعدة للتوثيق فقط */
+}
+
+</style>
 </head>
 <body>
 
@@ -5650,57 +6273,17 @@
 </section>
 
 <script>
-  // الكتاب يظهر ويُقرأ دائمًا بدون أي اعتماد على الإنترنت أو محركات خارجية.
-  // هذا الشريط يضيف زرَّي: الطباعة المباشرة، وتفعيل عرض صفحات A5 اختياريًا.
+  // زر طباعة فقط — النسخة المستقلة لا تحتاج إنترنت ولا أي محرك خارجي
   (function () {
     var bar = document.createElement('div');
     bar.className = 'print-toolbar';
     bar.setAttribute('dir', 'rtl');
-
-    var btnPrint = document.createElement('button');
-    btnPrint.type = 'button';
-    btnPrint.textContent = '🖨️ طباعة / حفظ PDF';
-    btnPrint.onclick = function () { window.print(); };
-
-    var btnPaged = document.createElement('button');
-    btnPaged.type = 'button';
-    btnPaged.textContent = '📄 عرض الكتاب بصفحات A5';
-    btnPaged.style.background = '#C5A059';
-    btnPaged.onclick = function () { loadPaged(); };
-
-    bar.appendChild(btnPaged);
-    bar.appendChild(btnPrint);
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = '🖨️ طباعة / حفظ PDF';
+    btn.onclick = function () { window.print(); };
+    bar.appendChild(btn);
     document.body.appendChild(bar);
-
-    window.loadPaged = function () {
-      if (window.__pagedLoading) return;
-      window.__pagedLoading = true;
-      btnPaged.textContent = '⏳ جارٍ التنسيق…';
-      var s = document.createElement('script');
-      s.src = 'https://unpkg.com/pagedjs@0.4.3/dist/paged.polyfill.js';
-      s.onerror = function () {
-        window.__pagedLoading = false;
-        btnPaged.textContent = 'تعذّر التحميل — استخدم الطباعة المباشرة';
-      };
-      s.onload = function () {
-        var tries = 0;
-        var iv = setInterval(function () {
-          tries++;
-          if (document.querySelector('.pagedjs_page')) {
-            clearInterval(iv);
-            document.body.classList.add('paged-active');
-            document.body.appendChild(bar);
-            btnPaged.textContent = 'تم العرض بصفحات A5';
-            btnPaged.disabled = true;
-          } else if (tries > 30) {
-            clearInterval(iv);
-            window.__pagedLoading = false;
-            btnPaged.textContent = 'تعذّر التنسيق — استخدم الطباعة المباشرة';
-          }
-        }, 500);
-      };
-      document.body.appendChild(s);
-    };
   })();
 </script>
 </body>
