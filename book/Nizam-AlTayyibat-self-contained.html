@@ -6273,16 +6273,40 @@ body.paged-active .copyright {
 </section>
 
 <script>
-  // زر طباعة فقط — النسخة المستقلة لا تحتاج إنترنت ولا أي محرك خارجي
+  // نسخة مستقلة — تعمل بدون إنترنت. زرا التحميل والطباعة:
   (function () {
     var bar = document.createElement('div');
     bar.className = 'print-toolbar';
     bar.setAttribute('dir', 'rtl');
-    var btn = document.createElement('button');
-    btn.type = 'button';
-    btn.textContent = '🖨️ طباعة / حفظ PDF';
-    btn.onclick = function () { window.print(); };
-    bar.appendChild(btn);
+
+    var btnDownload = document.createElement('button');
+    btnDownload.type = 'button';
+    btnDownload.textContent = '⬇️ تحميل هذا الملف';
+    btnDownload.onclick = function () {
+      try {
+        var html = '<!DOCTYPE html>
+' + document.documentElement.outerHTML;
+        var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'Nizam-AlTayyibat-self-contained.html';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+      } catch (e) {
+        window.print();
+      }
+    };
+
+    var btnPrint = document.createElement('button');
+    btnPrint.type = 'button';
+    btnPrint.textContent = '🖨️ طباعة / حفظ PDF';
+    btnPrint.onclick = function () { window.print(); };
+
+    bar.appendChild(btnPrint);
+    bar.appendChild(btnDownload);
     document.body.appendChild(bar);
   })();
 </script>

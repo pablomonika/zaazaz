@@ -5651,25 +5651,44 @@
 
 <script>
   // الكتاب يظهر ويُقرأ دائمًا بدون أي اعتماد على الإنترنت أو محركات خارجية.
-  // هذا الشريط يضيف زرَّي: الطباعة المباشرة، وتفعيل عرض صفحات A5 اختياريًا.
+  // الشريط يضيف: زر تحميل مباشر، زر طباعة، وزر عرض بصفحات A5 اختياري.
   (function () {
     var bar = document.createElement('div');
     bar.className = 'print-toolbar';
     bar.setAttribute('dir', 'rtl');
 
-    var btnPrint = document.createElement('button');
-    btnPrint.type = 'button';
-    btnPrint.textContent = '🖨️ طباعة / حفظ PDF';
+    function mkBtn(text, bg) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = text;
+      if (bg) b.style.background = bg;
+      bar.appendChild(b);
+      return b;
+    }
+
+    // 1) تحميل الملف المستقل مباشرة — يعمل حتى لو كانت نافذة الطباعة محظورة في المعاينة
+    var btnDownload = mkBtn('⬇️ تحميل الكتاب (ملف HTML)');
+    btnDownload.onclick = function () {
+      try {
+        var a = document.createElement('a');
+        a.href = 'Nizam-AlTayyibat-self-contained.html';
+        a.download = 'Nizam-AlTayyibat-self-contained.html';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      } catch (e) {
+        window.open('Nizam-AlTayyibat-self-contained.html', '_blank');
+      }
+    };
+
+    // 2) الطباعة / حفظ PDF
+    var btnPrint = mkBtn('🖨️ طباعة / حفظ PDF');
     btnPrint.onclick = function () { window.print(); };
 
-    var btnPaged = document.createElement('button');
-    btnPaged.type = 'button';
-    btnPaged.textContent = '📄 عرض الكتاب بصفحات A5';
-    btnPaged.style.background = '#C5A059';
+    // 3) عرض الكتاب بصفحات A5 (اختياري — يحتاج إنترنت)
+    var btnPaged = mkBtn('📄 عرض الكتاب بصفحات A5', '#C5A059');
     btnPaged.onclick = function () { loadPaged(); };
 
-    bar.appendChild(btnPaged);
-    bar.appendChild(btnPrint);
     document.body.appendChild(bar);
 
     window.loadPaged = function () {
