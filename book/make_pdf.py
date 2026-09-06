@@ -17,7 +17,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase.pdfmetrics import registerFontFamily, stringWidth
 from reportlab.platypus import (
     BaseDocTemplate, PageTemplate, Frame, Paragraph, Spacer,
-    Table, TableStyle, PageBreak, HRFlowable
+    Table, TableStyle, PageBreak, HRFlowable, Image
 )
 
 import arabic_reshaper
@@ -134,8 +134,9 @@ STYLES = {
 }
 
 # ----------------------------- محلل HTML -----------------------------
-VOID_TAGS = {'meta', 'link', 'br', 'hr', 'img', 'input', 'col', 'wbr',
+VOID_TAGS = {'meta', 'link', 'hr', 'input', 'col', 'wbr',
              'source', 'area', 'base', 'embed', 'param', 'track'}
+SELF_CLOSING = {'img', 'br'}
 
 class Parser(HTMLParser):
     def __init__(self):
@@ -145,6 +146,10 @@ class Parser(HTMLParser):
 
     def handle_starttag(self, tag, attrs):
         if tag in VOID_TAGS:
+            return
+        if tag in SELF_CLOSING:
+            node = {'tag': tag, 'attrs': dict(attrs), 'children': []}
+            self.stack[-1]['children'].append(node)
             return
         node = {'tag': tag, 'attrs': dict(attrs), 'children': []}
         self.stack[-1]['children'].append(node)
@@ -328,6 +333,25 @@ class HeadingRecorder:
         self.entries = []   # (level, title, id)
         self.page_map = {}
 
+def render_img(node):
+    src = node['attrs'].get('src', '')
+    path = '/home/user/zaazaz/book/' + src
+    classes = cls(node)
+    width = None
+    if 'cover-img' in classes:
+        width = 56 * mm
+    elif 'foods' in classes:
+        width = 70 * mm
+    elif 'part-img' in classes:
+        width = 44 * mm
+    try:
+        from PIL import Image as PILImage
+        w, h = PILImage.open(path).size
+        height = width * (h / w)
+        return [Image(path, width=width, height=height), Spacer(1, 4 * mm)]
+    except Exception:
+        return []
+
 def render_section(node, rec, out, new_page=True):
     classes = cls(node)
     ident = has_id(node)
@@ -356,11 +380,13 @@ def render_section(node, rec, out, new_page=True):
                             out.append(P(d, 'orn'))
             return
         # صفحة العنوان
-        out.append(Spacer(1, 26 * mm))
+        out.append(Spacer(1, 20 * mm))
         for c in node['children']:
             if c['tag'] == 'p' and 'basmala' in cls(c):
                 out.append(P(c, 'cover_basmala'))
-        out.append(Spacer(1, 30 * mm))
+            elif c['tag'] == 'img':
+                out.extend(render_img(c))
+        out.append(Spacer(1, 10 * mm))
         for c in node['children']:
             if c['tag'] == 'div' and 'cover-ornament' in cls(c):
                 out.append(P(c, 'orn'))
@@ -410,6 +436,8 @@ def render_section(node, rec, out, new_page=True):
         for c in node['children']:
             if c['tag'] == 'div' and 'ornament' in cls(c):
                 out.append(P(c, 'orn'))
+            elif c['tag'] == 'img':
+                out.extend(render_img(c))
             if c['tag'] == 'p' and 'verse' in cls(c):
                 out.append(P(c, 'verse'))
             if c['tag'] == 'p' and 'verse-ref' in cls(c):
@@ -441,6 +469,8 @@ def render_section(node, rec, out, new_page=True):
                 out.append(p)
             elif c['tag'] == 'h3':
                 out.append(P(c, 'h3'))
+            elif c['tag'] == 'img':
+                out.extend(render_img(c))
             elif c['tag'] == 'p':
                 out.append(P(c, 'body'))
             elif c['tag'] == 'ul':

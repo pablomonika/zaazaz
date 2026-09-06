@@ -135,6 +135,27 @@ h3 {
   font-weight: 700;
 }
 
+/* ------------------------------- الصور ------------------------------- */
+
+.cover-img {
+  display: block;
+  width: 60mm;
+  margin: 2mm auto 7mm auto;
+  border: 0.6pt solid var(--gold);
+  border-radius: 2mm;
+}
+
+.part-img {
+  display: block;
+  width: 46mm;
+  margin: 2mm auto 6mm auto;
+}
+
+.part-img.foods {
+  width: 76mm;
+  border-radius: 2mm;
+}
+
 /* الآية القرآنية الافتتاحية */
 .verse {
   font-family: "Amiri", "Noto Naskh Arabic", serif;
